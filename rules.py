@@ -3,6 +3,11 @@ import re
 
 def dictmerge(tags, newtags):
     for tag, valset in newtags.items():
+        if type(valset) != set:
+            if type(valset) == list:
+                valset = set(valset)
+            else:
+                valset = set([valset])
         if not tags.has_key(tag):
             tags[tag] = valset.copy()
         else:
@@ -214,27 +219,79 @@ def rule(rulename, rule):
     """Construct a rule object from a rulename and rule string."""
     return ruleclasses[rulename](rule)
 
+def apply_rules(rules, froot, rfpath):
+    tags = dict()
+    for rule in rules:
+        dictmerge(tags, rule.analyze(rfpath, '%s%s' % (froot, rfpath)))
+    return tags
 
-test1 = rule('linematch',
-             { 'pathrule' : { 'pattern' : '.*\.csv' },
-               'linerules' : [ { 'tags': ['Cancer Model'],
-                                 'prepattern' : { 'pattern' : 'Cell_Type_Transferred' },
-                                 'pattern' : ',([^,]+)',
-                                 'apply' : 'finditer',
-                                 'extract' : 'positional',
-                                 'rewrites' : [ ('[Aa][Rr][Ff]', 'ARF'),
-                                                ('[Ll][Uu][Cc]', 'LUC'),
-                                                ('[Pp]53', 'P53') ]
-                                 },
-                               { 'tags': ['Drug'],
-                                 'prepattern' : { 'pattern' : 'Treatment_Type' },
-                                 'pattern' : ',([^,]+)',
-                                 'apply' : 'finditer',
-                                 'extract' : 'positional'
-                                 }
-                               ]
-               }
-             )
+psoc_b_rules = [ rule('linematch',
+                      { 'pathrule' : { 'pattern' : '.*\.csv' },
+                        'linerules' : [ { 'tags': ['Cancer Model'],
+                                          'prepattern' : { 'pattern' : 'Cell_Type_Transferred' },
+                                          'pattern' : ',([^,]+)',
+                                          'apply' : 'finditer',
+                                          'extract' : 'positional',
+                                          'rewrites' : [ ('[Aa][Rr][Ff]', 'ARF'),
+                                                         ('[Ll][Uu][Cc]', 'LUC'),
+                                                         ('[Pp]53', 'P53') ]
+                                          },
+                                        { 'tags': ['Drug'],
+                                          'prepattern' : { 'pattern' : 'Treatment_Type' },
+                                          'pattern' : ',([^,]+)',
+                                          'apply' : 'finditer',
+                                          'extract' : 'positional'
+                                          }
+                                        ]
+                        }
+                      ),
+                 rule('linematch',
+                      { 'pathrule' : { 'pattern' : '.*\.csv' },
+                        'linerules' : [ { 'tags': ['Cancer Model'],
+                                          'prepattern' : { 'pattern' : 'Cell type/cell line' },
+                                          'pattern' : ',(.+)',
+                                          'extract' : 'positional',
+                                          'rewrites' : [ ('[Aa][Rr][Ff]', 'ARF'),
+                                                         ('[Ll][Uu][Cc]', 'LUC'),
+                                                         ('[Pp]53', 'P53') ]
+                                          },
+                                        { 'tags': ['Drug'],
+                                          'prepattern' : { 'pattern' : 'Treatment type' },
+                                          'pattern' : ',([^,]+)',
+                                          'extract' : 'positional',
+                                          'rewrites' : [ ('D', 'd') ]
+                                          }
+                                        ]
+                        }
+                      ),
+                 rule('pathmatch',
+                      { 'pattern' : '/[Rr][Pp]([1-4])/',
+                        'extract' : 'template',
+                        'tags' : [ 'Research Project' ],
+                        'templates' : [ 'RP\\1' ] }),
+                 rule('pathmatch',
+                      { 'pattern' : '(Mallick|Nolan|Labaer|Wang)',
+                        'apply' : 'search',
+                        'extract' : 'positional',
+                        'tags' : [ 'Experimentalist' ] }),
+                 rule('pathmatch',
+                      { 'pattern' : '([Aa][Rr][Ff]|[Pp]53)',
+                        'apply' : 'search',
+                        'extract' : 'positional',
+                        'tags' : [ 'Cancer Model' ] }),
+                 rule('pathmatch',
+                      { 'pattern' : '/Rp2/WA016L6',
+                        'extract' : 'constants',
+                        'constants' : { 'Cancer Model' : 'P53' } }),
+                 rule('pathmatch',
+                      { 'pattern' : '/Rp2/WA016L7',
+                        'extract' : 'constants',
+                        'constants' : { 'Cancer Model' : 'ARF' } })
+                 ]
 
-test2 = test1.analyze('/psoc-labaer.csv', '/scratch/psoc-labaer.csv')
+test2 = psoc_b_rules[0].analyze('/RP4/Labaer/psoc-labaer.csv', '/scratch/RP4/Labaer/psoc-labaer.csv')
+
+test3 = apply_rules(psoc_b_rules, '/scratch', '/RP4/Labaer/psoc-labaer.csv')
+
+test4 = apply_rules(psoc_b_rules, '/scratch', '/RP4/Wang/psoc-wang-3-78.csv')
 
