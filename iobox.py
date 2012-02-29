@@ -23,14 +23,14 @@ except:
     else:
         raise RuntimeError('Could not configure JSON library.')
 
-def load_treescan_stats_sha256(db, topid, scanera, excludes=[], includes=[]):
+def load_treescan_stats_sha256(db, topid, era, excludes=[], includes=[]):
     """Load treescan table from filesystem content.
 
        Behaves much like ftree.tree_scan_stats_sha256(...) except the
        database table 'treescan' stores old and new scan results
        rather than generating a sequence. Old scans are used to avoid
        recomputing sha256 when the size and mtime match. The numeric
-       scanera (scan era) is set in the table for use by other query
+       era (scan era) is set in the table for use by other query
        functions.
 
        Tree members present during this scan can be fetched via:
@@ -44,7 +44,7 @@ def load_treescan_stats_sha256(db, topid, scanera, excludes=[], includes=[]):
         fpath = '%s%s' % (top, rfpath)
         sha256sum = None
 
-        vars = dict(topid=topid, rfpath=rfpath, size=size, mtime=mtime, user=user, group=group, scanera=scanera)
+        vars = dict(topid=topid, rfpath=rfpath, size=size, mtime=mtime, user=user, group=group, scanera=era)
 
         results = db.query('SELECT * FROM treescan WHERE topid = $topid AND rfpath = $rfpath', vars=vars)
         
@@ -71,7 +71,7 @@ def load_treescan_stats_sha256(db, topid, scanera, excludes=[], includes=[]):
                      vars=vars)
 
 
-def generate_worklist(db, topid, scanera):
+def generate_worklist(db, topid, era):
     """Generate sequence of workitems for which tagging analysis and/or upload is pending.
 
        Considers current scan-era members for which transfer is not
@@ -90,7 +90,7 @@ def generate_worklist(db, topid, scanera):
                     + '        OR (s.size IS NOT NULL AND t.xferpos < s.size)'
                     + '        OR (t.tagera IS NOT NULL AND t.tagera < c.ruleera))'
                     + ' ORDER BY connid, scanid', 
-                    vars=dict(topid=topid, scanera=scanera))
+                    vars=dict(topid=topid, scanera=era))
 
 class Connection:
 
@@ -110,7 +110,7 @@ class Connection:
     def analyze(self, workitem):
         """Determine tag-values for this workitem."""
         # compute tags and append as subject dictionary to self.table
-        self.table.append( rules.apply_rules(self.rules, self.top, workitem.rfpath) )
+        self.table.append( rules.apply_rules(self.rules, self.top, workitem.rfpath, isfile=(workitem.size != None)) )
         self.tagnames.update( set(self.table[-1].keys()) )
         return self.table[-1]['name']
 
@@ -128,6 +128,15 @@ class Connection:
     def perform(self, workitem):
         """Perform workitem-specific actions."""
         assert workitem.connid == self.connid
+
+        if workitem.size != None:
+            if not self.connection.filemode:
+                # NULL filemode: ignore files
+                return
+        else:
+            if not self.connection.dirmode:
+                # NULL dirmode: ignore dirs
+                return
 
         name = workitem.name
 

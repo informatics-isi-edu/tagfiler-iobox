@@ -168,7 +168,7 @@ class REPathRule:
     def __init__(self, rule):
         self.rerule = RERule(rule)
 
-    def analyze(self, rfpath, fpath):
+    def analyze(self, rfpath, fpath, isfile=True):
         return self.rerule.analyze(rfpath)
 
 class RELineRule:
@@ -195,7 +195,10 @@ class RELineRule:
         self.pathmatch = RERule(rule.get('pathrule', { 'pattern' : '.*' }))
         self.linerules = [ RERule(r) for r in rule.get('linerules', []) ]
 
-    def analyze(self, rfpath, fpath):
+    def analyze(self, rfpath, fpath, isfile=False):
+        if not isfile:
+            return { }
+
         tags = dict()
         if self.pathmatch.test(rfpath):
             f = open(fpath, 'r')
@@ -219,9 +222,9 @@ def rule(rulename, rule):
     """Construct a rule object from a rulename and rule string."""
     return ruleclasses[rulename](rule)
 
-def apply_rules(rules, froot, rfpath):
+def apply_rules(rules, froot, rfpath, isfile=False):
     tags = dict()
     for rule in rules:
-        dictmerge(tags, rule.analyze(rfpath, '%s%s' % (froot, rfpath)))
+        dictmerge(tags, rule.analyze(rfpath, '%s%s' % (froot, rfpath), isfile=isfile))
     return tags
 
