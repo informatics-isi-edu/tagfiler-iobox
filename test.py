@@ -69,9 +69,9 @@ psoc_b_rules = [ rules.rule('linematch',
                               'constants' : { 'Cancer Model' : 'ARF' } })
                  ]
 
-test2 = psoc_b_rules[0].analyze('/RP4/Labaer/psoc-labaer.csv', '/scratch/RP4/Labaer/psoc-labaer.csv')
+test2 = rules.apply_rules(psoc_b_rules, '/scratch', '/RP4/Labaer/psoc-labaer.csv', isfile=False)
 
-test3 = rules.apply_rules(psoc_b_rules, '/scratch', '/RP4/Labaer/psoc-labaer.csv')
+test3 = rules.apply_rules(psoc_b_rules, '/scratch', '/RP4/Labaer/psoc-labaer.csv', isfile=True)
 
-test4 = rules.apply_rules(psoc_b_rules, '/scratch', '/RP4/Wang/psoc-wang-3-78.csv')
+test4 = rules.apply_rules(psoc_b_rules, '/scratch', '/RP4/Wang/psoc-wang-3-78.csv', isfile=True)
 
