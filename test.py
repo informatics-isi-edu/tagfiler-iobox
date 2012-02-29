@@ -35,7 +35,7 @@ psoc_b_rules = [ rules.rule('linematch',
                                                 'prepattern' : { 'pattern' : 'Treatment type' },
                                                 'pattern' : ',([^,]+)',
                                                 'extract' : 'positional',
-                                          'rewrites' : [ ('D', 'd') ]
+                                                'rewrites' : [ ('D', 'd') ]
                                                 }
                                               ]
                               }
