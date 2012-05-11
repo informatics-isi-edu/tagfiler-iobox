@@ -1,13 +1,13 @@
 
 def create_state(db):
-    db.query('CREATE TABLE configstate (currentera INTEGER)')
-    db.query('INSERT INTO configstate (currentera) VALUES (1)')
+    db.query('CREATE TABLE IF NOT EXISTS configstate (currentera INTEGER)')
+    db.query('INSERT OR IGNORE INTO configstate (currentera) VALUES (1)')
 
 def create_tops(db):
-    db.query('CREATE TABLE tops (topid INTEGER PRIMARY KEY, top text UNIQUE)')
+    db.query('CREATE TABLE IF NOT EXISTS tops (topid INTEGER PRIMARY KEY, top text UNIQUE)')
 
 def create_peers(db):
-    db.query('CREATE TABLE peers (peerid INTEGER PRIMARY KEY, peer text UNIQUE, baseuri text UNIQUE, username text, password text')
+    db.query('CREATE TABLE IF NOT EXISTS peers (peerid INTEGER PRIMARY KEY, peer text UNIQUE, baseuri text UNIQUE, username text, password text)')
 
 def create_connections(db):
     """Create connections table.
@@ -25,7 +25,7 @@ def create_connections(db):
             -- NULL means skip directories
             -- 'register' means send abstract record
     """
-    db.query('CREATE TABLE connections (connid INTEGER PRIMARY KEY,'
+    db.query('CREATE TABLE IF NOT EXISTS connections (connid INTEGER PRIMARY KEY,'
              + ' topid INTEGER REFERENCES tops(topid),'
              + ' peerid INTEGER REFERENCES peers(peerid),'
              + ' ruleera INTEGER NOT NULL DEFAULT 1,'
@@ -41,7 +41,7 @@ def create_rules(db):
           -- ruletype   is keyword for specific supported rule class
           -- ruledata   is JSON encoded rule structure appropriate for ruletype constructor
     """
-    db.query('CREATE TABLE rules (connid INTEGER REFERENCES connections (connid)'
+    db.query('CREATE TABLE IF NOT EXISTS rules (connid INTEGER REFERENCES connections (connid),'
              + ' ruletype text,'
              + ' ruledata text,'
              + ' UNIQUE (connid, ruletype, ruledata))')
@@ -62,9 +62,9 @@ def create_treescan(db):
        scanera2 value will fall behind the current era.
 
     """
-    db.query('CREATE TABLE treescan (scanid INTEGER PRIMARY KEY,'
+    db.query('CREATE TABLE IF NOT EXISTS treescan (scanid INTEGER PRIMARY KEY,'
              + ' topid text NOT NULL REFERENCES tops(topid), rfpath text NOT NULL,'
-             + ' size INTEGER, mtime float8, user text, group text, sha256sum text,'
+             + ' size INTEGER, mtime float8, user text, `group` text, sha256sum text,'
              + ' scanera1 INTEGER NOT NULL, scanera2 INTEGER NOT NULL,'
              + ' UNIQUE(topid, rfpath) )')
     #db.query('CREATE INDEX treescan_pkey_idx ON treescan (topid, rfpath)')
@@ -84,7 +84,7 @@ def create_transfers(db):
          -- tagera is era when tags were last formulated and pushed
             -- NULL when not tagged so far
     """
-    db.query('CREATE TABLE transfers (connid INTEGER REFERENCES connections(connid),'
+    db.query('CREATE TABLE IF NOT EXISTS transfers (connid INTEGER REFERENCES connections(connid),'
              + ' scanid INTEGER REFERENCES treescan(scanid),'
              + ' name text NOT NULL,'
              + ' subject INTEGER,'
