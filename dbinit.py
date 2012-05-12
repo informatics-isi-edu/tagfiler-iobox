@@ -64,7 +64,7 @@ def create_treescan(db):
     """
     db.query('CREATE TABLE IF NOT EXISTS treescan (scanid INTEGER PRIMARY KEY,'
              + ' topid text NOT NULL REFERENCES tops(topid), rfpath text NOT NULL,'
-             + ' size INTEGER, mtime float8, user text, `group` text, sha256sum text,'
+             + ' size INTEGER, mtime float8, user text, "group" text, sha256sum text,'
              + ' scanera1 INTEGER NOT NULL, scanera2 INTEGER NOT NULL,'
              + ' UNIQUE(topid, rfpath) )')
     #db.query('CREATE INDEX treescan_pkey_idx ON treescan (topid, rfpath)')
