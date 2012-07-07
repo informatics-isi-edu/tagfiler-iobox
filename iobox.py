@@ -39,7 +39,7 @@ def load_treescan_stats_sha256(db, topid, era, excludes=[], includes=[]):
     """
     top = db.query('SELECT top FROM tops WHERE topid = $topid', vars=dict(topid=topid))[0].top
 
-    for r in ftree.tree_scan_stats(topid, excludes, includes):
+    for r in ftree.tree_scan_stats(top, excludes, includes):
         rfpath, size, mtime, user, group = r
         fpath = '%s%s' % (top, rfpath)
         sha256sum = None
@@ -47,8 +47,7 @@ def load_treescan_stats_sha256(db, topid, era, excludes=[], includes=[]):
         vars = dict(topid=topid, rfpath=rfpath, size=size, mtime=mtime, user=user, group=group, scanera=era)
 
         results = db.query('SELECT * FROM treescan WHERE topid = $topid AND rfpath = $rfpath', vars=vars)
-        
-        if len(results) > 0:
+        try:
             cached = results[0]
             if cached.size != size or cached.mtime != mtime:
                 sha256sum = ftree.sha256sum(fpath)
@@ -57,7 +56,8 @@ def load_treescan_stats_sha256(db, topid, era, excludes=[], includes=[]):
                     db.query('DELETE FROM treescan WHERE topid = $topid AND rfpath = $rfpath', vars=vars)
             else:
                 sha256sum = cached.sha256sum
-        else:
+        except IndexError:
+            # no cached row
             cached = None
             sha256sum = ftree.sha256sum(fpath)
             db.query('UPDATE treescan SET scanera2 = $scanera WHERE topid = $topid AND rfpath = $rfpath', vars=vars)
@@ -66,7 +66,7 @@ def load_treescan_stats_sha256(db, topid, era, excludes=[], includes=[]):
             
         if not cached:
             vars['sha256sum'] = sha256sum
-            db.query('INSERT INTO treescan (topid, rfpath, size, mtime, user, group, sha256sum, scanera1, scanera2)'
+            db.query('INSERT INTO treescan (topid, rfpath, size, mtime, user, "group", sha256sum, scanera1, scanera2)'
                      + ' VALUES ($topid, $rfpath, $size, $mtime, $user, $group, $sha256sum, $scanera, $scanera)',
                      vars=vars)
 
@@ -78,7 +78,7 @@ def generate_worklist(db, topid, era):
        already complete and up to date with tagera.
     """
     return db.query('SELECT c.topid AS topid, c.connid AS connid, s.scanid AS scanid'
-                    + '     s.rfpath AS rfpath, s.size AS size, s.mtime AS mtime, s.user AS user, s.group AS group, s.sha256sum AS sha256sum,'
+                    + '     s.rfpath AS rfpath, s.size AS size, s.mtime AS mtime, s.user AS user, s."group" AS group, s.sha256sum AS sha256sum,'
                     + '     t.subject AS subject, t.name AS name, t.tagera AS tagera, t.xferpos AS xferpos'
                     + ' FROM connections AS c'
                     + ' JOIN treescan AS s USING (topid)'
