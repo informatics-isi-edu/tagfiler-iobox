@@ -1,14 +1,16 @@
 # date=2012-01-20
 # session=session1
 # name=file://smithd#tagfiler_ep/opt/data/studies/2012-01-20/session1/
-
-globus_online_rules = (
-     ('pathmatch', 
-           {'pattern': '^/opt/data/studies/([^/]+)/([^/]+)/', 'extract': 'positional', 'tags':['date', 'session']}),
-     ('pathmatch',
+def generate_rules(endpoint_name):
+    return (
+         ('pathmatch', 
+           {'pattern': '^/opt/data/studies/([^/]+)/([^/]+)/', 'extract': 'positional', 'tags':['date', 'session']}
+         ),
+         ('pathmatch',
            {'pattern': '^(?P<path>.*)',
-            'templates': ['file://smithd#tagfiler_ep\g<path>'],
+            'templates': ['file://%s\g<path>' % endpoint_name],
             'extract': 'template',
-            'tags': ['name'] })
-)
+            'tags': ['name'] }
+		 )
+    )
 

@@ -12,14 +12,16 @@ import sys
 from settings import DATABASE_FILE, TAGFILER_BASEURL, TAGFILER_PEER_NAME, TAGFILER_USERNAME, TAGFILER_PASSWORD
 from dbinit import init_db
 from iobox import *
-from globus_online_rules import globus_online_rules as tag_rules
+import globus_online_rules
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: %s <tree root>" % sys.argv[0]
+    if len(sys.argv) < 3:
+        print "Usage: %s <tree root> <endpoint_name>" % sys.argv[0]
         sys.exit(1)
     tree_root = sys.argv[1]
+    endpoint_name = sys.argv[2]
 
+    tag_rules = globus_online_rules.generate_rules(endpoint_name)
     # Create database connection
     print "Connecting to database %s..." % DATABASE_FILE
     db = web.database(db=DATABASE_FILE, dbn='sqlite')
