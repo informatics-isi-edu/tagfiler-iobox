@@ -112,6 +112,7 @@ class Connection:
         self.rules = [ rules.rule(r.ruletype, jsonReader(r.ruledata))
                        for r in db.query('SELECT * FROM rules WHERE connid = $connid', vars=dict(connid=connid)) ]
         self.tagnames = set()
+        self.client = TagfilerServiceClient(self.peer.baseuri, self.peer.username, self.peer.password)
 
     def analyze(self, workitem):
         """Determine tag-values for this workitem."""
@@ -137,34 +138,11 @@ class Connection:
             parsed_table.append(parsed_dict)
         payload = jsonWriter(parsed_table)
         bulkurl = '/tagfiler/subject/name(%s)' % ';'.join([ urllib.quote(tag) for tag in self.tagnames ])
-        login_cookie = self.send_login_request()
+        login_cookie = self.client.send_login_request()
         headers = {}
         headers["Content-Type"] = "application/json"
         headers["Cookie"] = login_cookie
-        self.send_request("PUT", bulkurl, payload, headers)
-
-    def send_login_request(self):
-        headers = {}
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-        resp = self.send_request("POST", "/webauthn/login", "username=%s&password=%s" % (self.peer.username, self.peer.password), headers)
-        return resp.getheader("set-cookie")
-        
-
-    def send_request(self, method, url, body, headers={}):
-        o = urlparse.urlparse(self.peer.baseuri)
-        
-        webconn = None
-        if o.scheme == 'https':
-            webconn = HTTPSConnection(host=o.netloc, port=o.port)
-        elif o.scheme == 'http':
-            webconn = HTTPConnection(host=o.netloc, port=o.port)
-        else:
-            raise ValueError('Scheme %s is not supported.' % o.scheme)
-        webconn.request(method, url, body, headers)
-        resp = webconn.getresponse()
-        if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT]:
-            raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
-        return resp
+        self.client.send_request("PUT", bulkurl, payload, headers)
 
     def upload_file(self, workitem):
         """Upload an individual file w/ entity body from disk."""
@@ -200,6 +178,37 @@ class Connection:
             # file item needs independent upload
             self.upload_file(workitem)
         
+class TagfilerServiceClient(object):
+
+    def __init__(self, baseuri, username, password):
+        self.baseuri = baseuri
+        o = urlparse.urlparse(self.baseuri)
+        self.scheme = o.scheme
+        self.host = o.netloc
+        self.port = o.port
+        self.username = username
+        self.password = password
+
+    def send_request(self, method, url, body='', headers={}):
+        
+        webconn = None
+        if self.scheme == 'https':
+            webconn = HTTPSConnection(host=self.host, port=self.port)
+        elif self.scheme == 'http':
+            webconn = HTTPConnection(host=self.netloc, port=self.port)
+        else:
+            raise ValueError('Scheme %s is not supported.' % self.scheme)
+        webconn.request(method, url, body, headers)
+        resp = webconn.getresponse()
+        if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT]:
+            raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
+        return resp
+
+    def send_login_request(self):
+        headers = {}
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        resp = self.send_request("POST", "/webauthn/login", "username=%s&password=%s" % (self.username, self.password), headers)
+        return resp.getheader("set-cookie")
 
 def process_worklist(db, topid, connid, era):
     conn = None
