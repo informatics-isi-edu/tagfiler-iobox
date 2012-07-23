@@ -1,4 +1,4 @@
-DATABASE_FILE="/var/lib/tagfiler/iobox.sqlite"
+DATABASE_FILE="iobox.sqlite"
 TAGFILER_PEER_NAME=""
 TAGFILER_BASEURL=""
 TAGFILER_USERNAME=""
