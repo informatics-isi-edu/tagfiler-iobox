@@ -4,7 +4,7 @@
 def generate_rules(endpoint_name):
     return (
          ('pathmatch', 
-           {'pattern': '^/opt/data/studies/([^/]+)/([^/]+)/', 'extract': 'positional', 'tags':['date', 'session']}
+           {'pattern': '^/.*/studies/([^/]+)/([^/]+)/', 'extract': 'positional', 'tags':['date', 'session']}
          ),
          ('pathmatch',
            {'pattern': '^(?P<path>.*)',
