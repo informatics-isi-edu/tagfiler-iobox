@@ -83,7 +83,7 @@ def generate_worklist(db, topid, era):
        Considers current scan-era members for which transfer is not
        already complete and up to date with tagera.
     """
-    return db.query('SELECT c.topid, c.connid, s.scanid,'
+    return list(db.query('SELECT c.topid, c.connid, s.scanid,'
                     + '     s.rfpath, s.size, s.mtime, s.user, s."group", s.sha256sum,'
                     + '     t.subject, t.name, t.tagera, t.xferpos'
                     + ' FROM connections AS c'
@@ -96,7 +96,7 @@ def generate_worklist(db, topid, era):
                     + '        OR (s.size IS NOT NULL AND t.xferpos < s.size)'
                     + '        OR (t.tagera IS NOT NULL AND t.tagera < c.ruleera))'
                     + ' ORDER BY c.connid, s.scanid', 
-                    vars=dict(topid=topid, scanera=era))
+                    vars=dict(topid=topid, scanera=era)))
 
 class Connection:
 
