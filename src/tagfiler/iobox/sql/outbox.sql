@@ -41,13 +41,13 @@ CREATE TABLE IF NOT EXISTS path_match (
 
 CREATE TABLE IF NOT EXISTS path_match_tag(
     id INTEGER NOT NULL PRIMARY KEY,
-    pathmatch_id INTEGER NOT NULL REFERENCES path_match(id),
+    path_match_id INTEGER NOT NULL REFERENCES path_match(id),
     tag_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS path_match_template(
     id INTEGER NOT NULL PRIMARY KEY,
-    pathmatch_id INTEGER NOT NULL REFERENCES path_match(id),
+    path_match_id INTEGER NOT NULL REFERENCES path_match(id),
     template TEXT NOT NULL
 );
 
