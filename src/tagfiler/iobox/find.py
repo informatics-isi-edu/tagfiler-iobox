@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-'''
+"""
 Placeholder for the find module.
-'''
+"""
 
 import logging
 import worker
@@ -23,7 +23,7 @@ import worker
 logger = logging.getLogger(__name__)
 
 class Find(worker.Worker):
-    '''A worker for performing the find stage of the outbox pipeline.'''
+    """A worker for performing the find stage of the outbox pipeline."""
     
     def do_work(self, task, work_done):
         logger.debug('Find: %d' % task)

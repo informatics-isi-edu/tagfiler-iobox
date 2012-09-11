@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-'''
+"""
 Unit tests for the worker module.
-'''
+"""
 
 import unittest
 import logging
@@ -24,24 +24,24 @@ import tagfiler.iobox.worker as worker
 logger = logging.getLogger(__name__)
 
 class TestWorker(worker.Worker):
-    '''A test worker.
+    """A test worker.
     
     The test worker simulates a stage in a worker thread pipeline. It takes a
     task queue for inputs to the stage and a resutls queue as the output for
     the stage. It takes a worker_id to add to print in the log. And it
     generates a (results_per_task) number of dummy results for every task it
     takes off the intput tasks queue.
-    '''
+    """
     
     def __init__(self, tasks, results, worker_id, results_per_task):
-        '''Initializes the Worker class.
+        """Initializes the Worker class.
         
         Arguments:
         tasks -- a WorkQueue of tasks.
         results -- a WorkQueue of results.
         worker_id -- an identifier for this test worker.
         generate_num_tasks -- the number of results per task to produce. 
-        '''
+        """
         worker.Worker.__init__(self, tasks, results)
         self.results_per_task = results_per_task
         self.worker_id = worker_id
@@ -55,10 +55,10 @@ class TestWorker(worker.Worker):
 
 
 class Test(unittest.TestCase):
-    '''The Unit Tests for worker module.'''
+    """The Unit Tests for worker module."""
 
     def testSingleStagePipeline(self):
-        '''Tests a single stage (i.e., single worker) pipeline.'''
+        """Tests a single stage (i.e., single worker) pipeline."""
         
         # Create task queues for the pipeline.
         task_queue_1 = worker.WorkQueue()
@@ -82,7 +82,7 @@ class Test(unittest.TestCase):
         task_queue_1.join()
         
     def testThreeStagePipeline(self):
-        '''Tests a three stage pipeline.'''
+        """Tests a three stage pipeline."""
         
         # Create task queues for the pipeline.
         task_queue_1 = worker.WorkQueue()
@@ -114,7 +114,7 @@ class Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    '''A standaline test of the three stage pipeline.'''
+    """A standaline test of the three stage pipeline."""
 
     import sys
     sys.argv = ['', 'Test.testSingleStagePipeline', 'Test.testThreeStagePipeline']
