@@ -27,7 +27,7 @@ class Find(worker.Worker):
     
     def do_work(self, task, work_done):
         logger.debug('Find: %d' % task)
-        for i in range(task, task+10):
+        for i in range(task, task+3):
             result = i
             work_done(result)
         return

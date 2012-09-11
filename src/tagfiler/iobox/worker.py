@@ -62,6 +62,7 @@ class Worker(threading.Thread):
         results -- a WorkQueue of results.
         """
         threading.Thread.__init__(self)
+        self.setDaemon(True)
         self.tasks = tasks
         self.results = results
     
