@@ -17,8 +17,11 @@
 Unit tests for find module.
 """
 
+import os
 import unittest
 import logging
+import tempfile
+import tagfiler.iobox.dao as dao
 import tagfiler.iobox.worker as worker
 import tagfiler.iobox.find as find
 
@@ -26,18 +29,19 @@ logger = logging.getLogger(__name__)
 
 class Test(unittest.TestCase):
 
-
     def setUp(self):
         """TODO: We should create a tmp dir with a known structure so that in
         the tests we can make sure to find just the number of files and dirs
         that we expect to find."""
-        pass
-
+        p = {'outbox_name':'test_find', 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
+        (self.outbox_file, self.outbox_path) = tempfile.mkstemp()
+        logger.debug("outbox_path: %s" % self.outbox_path)
+        self.outbox_dao = dao.OutboxDAO(self.outbox_path, **p)
 
     def tearDown(self):
         """TODO: Then we should clean up the temp dir."""
-        pass
-
+        self.outbox_dao.close()
+        os.unlink(self.outbox_path)
 
     def testFind(self):
         """Simple test for the Find worker."""
