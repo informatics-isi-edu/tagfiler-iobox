@@ -19,6 +19,7 @@ Placeholder for the find module.
 
 import logging
 import worker
+import tagfiler.util.files as fileutil
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +27,10 @@ class Find(worker.Worker):
     """A worker for performing the find stage of the outbox pipeline."""
     
     def do_work(self, task, work_done):
-        logger.debug('Find: %d' % task)
-        for i in range(task, task+3):
-            result = i
-            work_done(result)
+        logger.debug('Find:do_work: next task is: %s' % task)
+        for fname in fileutil.tree_scan(task):
+            logger.debug('Find:do_work: found file: %s' % fname)
+        #for i in range(task, task+3):
+        #    result = i
+        #    work_done(result)
         return
