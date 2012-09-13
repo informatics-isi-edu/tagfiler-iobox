@@ -23,7 +23,7 @@ Main script to invoke the Tagfiler Outbox.
 # daemon. This is useful for now for bootstrapping the development.
 
 import sys
-import tagfiler.iobox.outbox as outbox
+import tagfiler.iobox.cmdline as cmdline
 
 if __name__ == "__main__":
-    sys.exit(outbox.main())
+    sys.exit(cmdline.main())

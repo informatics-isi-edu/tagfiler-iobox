@@ -26,10 +26,6 @@ from tagfiler.iobox import worker, find, tag, register
 
 logger = logging.getLogger(__name__)
 
-# Exit return codes
-__EXIT_SUCCESS = 0
-__EXIT_FAILURE = 1
-
 
 class Outbox(threading.Thread):
     """
@@ -61,10 +57,6 @@ class Outbox(threading.Thread):
         self._find = find.Find(self._find_q, self._tag_q)
         self._tag = tag.Tag(self._tag_q, self._register_q)
         self._register = register.Register(self._register_q, worker.WorkQueue())
-        
-        # Dummy find tasks
-        for i in range(3):
-            self._find_q.put(i)
 
     def terminate(self):
         """Flags the Outbox to exit gracefully."""
@@ -94,24 +86,3 @@ class Outbox(threading.Thread):
         self._find_q.join()
         self._tag_q.join()
         self._register_q.join()
-
-def main():
-    """
-    This will serve as the main routine for the Outbox.
-    
-    It will kick off the Outbox daemon.
-    """
-    print "main()"
-    
-    logging.basicConfig(level=logging.DEBUG)
-    
-    outbox = Outbox(None)
-    outbox.start()
-    # this doesn't exactly work and it is NOT how I want this to work, just a
-    # little Q&D for now
-    outbox.join()
-    
-    print "main() done"
-    
-    return __EXIT_SUCCESS
-
