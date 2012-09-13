@@ -65,7 +65,6 @@ class Outbox(threading.Thread):
         # Dummy find tasks
         for i in range(3):
             self._find_q.put(i)
-        self._find_q.put(worker.Worker.DONE)
 
     def terminate(self):
         """Flags the Outbox to exit gracefully."""

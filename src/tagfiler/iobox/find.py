@@ -30,7 +30,4 @@ class Find(worker.Worker):
         logger.debug('Find:do_work: next task is: %s' % task)
         for fname in fileutil.tree_scan(task):
             logger.debug('Find:do_work: found file: %s' % fname)
-        #for i in range(task, task+3):
-        #    result = i
-        #    work_done(result)
-        return
+            work_done(fname)
