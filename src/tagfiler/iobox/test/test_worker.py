@@ -19,6 +19,7 @@ Unit tests for the worker module.
 
 import unittest
 import logging
+import time
 import tagfiler.iobox.worker as worker
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,6 @@ class TestWorker(worker.Worker):
         for i in range(self.results_per_task):
             result = i
             work_done(result)
-        return
 
 
 class Test(unittest.TestCase):
@@ -68,7 +68,7 @@ class Test(unittest.TestCase):
         # filled by the the pipelined workers.
         for i in range(10):
             task_queue_1.put(i)
-        task_queue_1.put(worker.Worker.DONE)
+        #task_queue_1.put(worker.Worker.DONE)
     
         # Create the test workers
         stage1 = TestWorker(task_queue_1, task_queue_2, 1, 10)
@@ -80,6 +80,10 @@ class Test(unittest.TestCase):
         # Now wait/join on the task queues so that the main thread will not exit
         # before the workers have finished.
         task_queue_1.join()
+        stage1.terminate()
+        
+        time.sleep(1)
+        assert not stage1.is_alive()
         
     def testThreeStagePipeline(self):
         """Tests a three stage pipeline."""
@@ -93,7 +97,7 @@ class Test(unittest.TestCase):
         # filled by the the pipelined workers.
         for i in range(10):
             task_queue_1.put(i)
-        task_queue_1.put(worker.Worker.DONE)
+        #task_queue_1.put(worker.Worker.DONE)
     
         # Create the test workers
         stage1 = TestWorker(task_queue_1, task_queue_2, 1, 10)
@@ -111,13 +115,18 @@ class Test(unittest.TestCase):
         task_queue_1.join()
         task_queue_2.join()
         task_queue_3.join()
+        stage1.terminate()
+        stage2.terminate()
+        stage3.terminate()
+        
+        time.sleep(1)
+        assert not stage1.is_alive()
+        assert not stage2.is_alive()
+        assert not stage3.is_alive()
 
 
 if __name__ == "__main__":
     """A standaline test of the three stage pipeline."""
-
-    import sys
-    sys.argv = ['', 'Test.testSingleStagePipeline', 'Test.testThreeStagePipeline']
 
     logging.basicConfig(level=logging.DEBUG)
 
