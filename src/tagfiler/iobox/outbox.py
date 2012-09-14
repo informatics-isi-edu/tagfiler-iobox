@@ -21,7 +21,6 @@ the python standard daemon library.
 """
 
 import logging
-import threading
 from tagfiler.iobox import worker, find, tag, register
 
 logger = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 # manage the pipeline of threads and/or threadpools that are doing the work.
 # One argument for keeping this threaded would be that the outbox might need
 # to be event-driven. But that's not certain right now.
-class Outbox(threading.Thread):
+class Outbox():
     """
     The Outbox class represents one outbox.
     
@@ -46,8 +45,6 @@ class Outbox(threading.Thread):
                 configuration of this outbox.
         """
         logger.debug("__init__")
-        threading.Thread.__init__(self)
-        self.setDaemon(True)            #TODO: uncomment this when done testing
         self._model = outbox_model
         self._terminated = False
         
@@ -66,27 +63,19 @@ class Outbox(threading.Thread):
         self._find_q.put("/tmp")
 
     def terminate(self):
-        """Flags the Outbox to exit gracefully."""
+        """Flags the outbox to terminate gracefully."""
         logger.debug("terminate")
         self._terminated = True
-
-    def run(self):
-        """
-        Continuously scans.
-        """
-        logger.debug("Outbox:run")
-
-        # Start the pipeline
+        self._find.terminate()
+        self._tag.terminate()
+        self._register.terminate()
+        
+    def start(self):
+        """""Starts the outbox pipeline."""
+        logger.debug("start")
         self._register.start()
         self._tag.start()
         self._find.start()
-        
-        # Wait for pipeline to finish
-        self._find_q.join()
-        self._tag_q.join()
-        self._register_q.join()
-
-        logger.debug("Outbox:done")
         
     def join(self):
         """Q&D thread synchronized termination for now, but need to really do this later"""

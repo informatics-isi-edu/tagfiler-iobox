@@ -63,6 +63,7 @@ class Test(unittest.TestCase):
         outbox_worker = outbox.Outbox(self.outbox_model)
         outbox_worker.start()
         outbox_worker.join() # TODO: Fix this Q&D synchronization!
+        outbox_worker.terminate()
         logger.debug("testOutbox: done")
 
 
