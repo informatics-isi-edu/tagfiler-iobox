@@ -66,6 +66,10 @@ class Outbox():
         self._tag.terminate()
         self._register.terminate()
         
+    def is_terminated(self):
+        """Indicates whether the outbox (and its pipeline) have terminated cleanly."""
+        return not (self._find.is_alive() or self._tag.is_alive() or self._register.is_alive())
+        
     def start(self):
         """""Starts the outbox pipeline."""
         logger.debug("Outbox:start")

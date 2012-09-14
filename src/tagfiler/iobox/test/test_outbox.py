@@ -64,6 +64,8 @@ class Test(unittest.TestCase):
         outbox_worker.start()
         outbox_worker.join() # TODO: Fix this Q&D synchronization!
         outbox_worker.terminate()
+        time.sleep(1)
+        self.assertTrue(outbox_worker.is_terminated(), 'Outbox has not terminated')
         logger.debug("testOutbox: done")
 
 
