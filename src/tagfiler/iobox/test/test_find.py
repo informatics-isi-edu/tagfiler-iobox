@@ -25,6 +25,7 @@ import time
 
 import tagfiler.iobox.worker as worker
 import tagfiler.iobox.find as find
+import tagfiler.iobox.models as models
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,9 @@ class Test(unittest.TestCase):
         tag_q = worker.WorkQueue()
     
         for rootdir in self.rootdirs:
-            find_q.put(rootdir)
+            root = models.Root()
+            root.set_filename(rootdir)
+            find_q.put(root)
         
         find_worker = find.Find(find_q, tag_q)
         find_worker.start()

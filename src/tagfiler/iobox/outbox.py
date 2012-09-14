@@ -14,10 +14,7 @@
 # limitations under the License.
 #
 """
-The main process for the Outbox.
-
-TODO: For now a simple process, but it will be turned into a daemon using
-the python standard daemon library.
+Management interface representing each Outbox.
 """
 
 import logging
@@ -31,40 +28,39 @@ logger = logging.getLogger(__name__)
 # to be event-driven. But that's not certain right now.
 class Outbox():
     """
-    The Outbox class represents one outbox.
+    The class that represents each Outbox.
     
-    It is the thread the continually scans the file system for new or modified
-    files. It manages the scanning pipeline.
+    It is responsible for initializing each outbox's threaded pipeline. It
+    provides management interfaces to start and terminate the pipeline.
     """
     
     def __init__(self, outbox_model):
-        """Initializes the Outbox.
-        
-        Arguments:
-            'outbox_model': the models.Outbox object the represents the
-                configuration of this outbox.
-        """
-        logger.debug("__init__")
+        """Initializes the Outbox according to the required 'outbox_model'
+        parameter of type 'models.Outbox'."""
+        logger.debug("Outbox:__init__")
         self._model = outbox_model
         self._terminated = False
         
-        # I really wonder whether I need to keep refs to these queues. Hmmmm...
         self._find_q = worker.WorkQueue()
         self._tag_q = worker.WorkQueue()
         self._register_q = worker.WorkQueue()
+        
+        # Populate Find's queue with the root directories.
+        for root in self._model.get_roots():
+            self._find_q.put(root)
 
         # The pipeline consists of the Find, Tag, and Register workers with their
         # associated WorkQueues.
-        self._find = find.Find(self._find_q, self._tag_q)
+        self._find = find.Find(self._find_q, self._tag_q, 
+                               self._model.get_inclusion_patterns(),
+                               self._model.get_exclusion_patterns())
         self._tag = tag.Tag(self._tag_q, self._register_q)
         self._register = register.Register(self._register_q, worker.WorkQueue())
         
-        # Get outbox and populate Find's queue with the root directories.
-        self._find_q.put("/tmp")
 
     def terminate(self):
         """Flags the outbox to terminate gracefully."""
-        logger.debug("terminate")
+        logger.debug("Outbox:terminate")
         self._terminated = True
         self._find.terminate()
         self._tag.terminate()
@@ -72,7 +68,7 @@ class Outbox():
         
     def start(self):
         """""Starts the outbox pipeline."""
-        logger.debug("start")
+        logger.debug("Outbox:start")
         self._register.start()
         self._tag.start()
         self._find.start()

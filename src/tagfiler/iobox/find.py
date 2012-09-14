@@ -26,8 +26,23 @@ logger = logging.getLogger(__name__)
 class Find(worker.Worker):
     """A worker for performing the find stage of the outbox pipeline."""
     
+    def __init__(self, tasks, results, inclusion_patterns=[], exclusion_patterns=[]):
+        """
+        Initializes the Find class.
+        
+        Arguments:
+            tasks: a WorkQueue of tasks.
+            results: a WorkQueue of results.
+            inclusion_patterns: optional 'InclusionPattern' list
+            exclusion_patterns: optional 'ExclusionPattern' list
+        """
+        worker.Worker.__init__(self, tasks, results)
+        self._inclusion_patterns = inclusion_patterns
+        self._exclusion_patterns = exclusion_patterns
+        
     def do_work(self, task, work_done):
-        logger.debug('Find:do_work: next task is: %s' % task)
-        for fname in fileutil.tree_scan(task):
-            logger.debug('Find:do_work: found file: %s' % fname)
+        path = task.get_filename() # We expect task to be of type models.Root
+        logger.debug('Find:do_work: path: %s' % path)
+        for fname in fileutil.tree_scan(path):
+            logger.debug('Find:do_work: file: %s' % fname)
             work_done(fname)
