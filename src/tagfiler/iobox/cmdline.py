@@ -20,10 +20,11 @@ The command-line interface to the tagfiler-outbox service.
 import os
 import logging
 import tempfile
-import time
+import argparse
+import sys
 
 import tagfiler.iobox.dao as dao
-from tagfiler.iobox.models import Outbox, Root
+import tagfiler.iobox.models as models
 import tagfiler.iobox.outbox as outbox
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,15 @@ def main():
     """
     The main routine.
     """
+    parser = argparse.ArgumentParser(prog='tagfiler-iobox', 
+                                     description='Tagfiler IOBox')
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--version', action='version', 
+                        version='%(prog)s 0.1 beta')
+    parser.add_argument('rootdir', nargs='+', type=str, 
+                        default=sys.stdin, 
+                        help='root directories of the outbox')
+    args = parser.parse_args(['/tmp'])
     
     # TODO: Use a verbosity flag to set the level
     logging.basicConfig(level=logging.DEBUG)
@@ -73,21 +83,15 @@ def main():
     
     # Get the Outbox model object
     outbox_model = outbox_dao.get_outbox_by_name('temp_outbox')
-    root = Root()
+    root = models.Root()
     root.set_filename("/tmp")
     outbox_dao.add_root_to_outbox(outbox_model, root)
     
-    # TODO: should move these to a shutdown() function
+    outbox_manager = outbox.Outbox(outbox_model)
+    outbox_manager.start()
+    outbox_manager.join()
+    outbox_manager.terminate()
+    
+    # TODO: should move this to a shutdown() function
     remove_temp_outbox_dao(outbox_path, outbox_dao)
-    return 0
-
-    outbox_worker = outbox.Outbox(None)
-    outbox_worker.start()
-    # this doesn't exactly work and it is NOT how I want this to work, just a
-    # little Q&D for now
-    outbox_worker.join()
-    
-    print "main() done"
-    
     return __EXIT_SUCCESS
-
