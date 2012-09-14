@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS scan_state (
 
 CREATE TABLE IF NOT EXISTS scan (
     id INTEGER NOT NULL PRIMARY KEY,
-    start TIMESTAMP NOT NULL,
-    'end' TIMESTAMP,
+    start FLOAT8 NOT NULL,
+    'end' FLOAT8,
     scan_state_id INTEGER REFERENCES scan_state(id)
 );
 

@@ -3,7 +3,11 @@ Created on Sep 10, 2012
 
 @author: smithd
 '''
+
 class Outbox(object):
+    """outbox configuration object that retains information about its tagfiler, roots, inclusion/exclusion patterns, path/line matches.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("outbox_id")
         self.name = kwargs.get("outbox_name")
@@ -56,6 +60,9 @@ class Outbox(object):
         self.line_matches.append(line_match)
 
 class Tagfiler(object):
+    """Tagfiler configuration object that retains information about its url, username, and password.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("tagfiler_id")
         self.url = kwargs.get("tagfiler_url")
@@ -73,6 +80,9 @@ class Tagfiler(object):
         return self.password
 
 class Root(object):
+    """File scan root assigned to an outbox.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.filename = kwargs.get("filename")
@@ -87,6 +97,9 @@ class Root(object):
         self.filename = filename
 
 class Pattern(object):
+    """Abstract parent for patterns associated with an outbox.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.pattern = kwargs.get("pattern")
@@ -100,12 +113,21 @@ class Pattern(object):
         self.id = i
 
 class ExclusionPattern(Pattern):
+    """Exclusion pattern associated with an outbox.
+    
+    """
     pass
 
 class InclusionPattern(Pattern):
+    """Inclusion pattern associated with an outbox.
+    
+    """
     pass
 
 class PathMatch(object):
+    """Path match rule associated with an outbox.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.outbox_id = kwargs.get("outbox_id")
@@ -148,6 +170,9 @@ class PathMatch(object):
         self.templates.append(template)
 
 class PathMatchComponent(object):
+    """Abstract parent for components associated with a path match rule.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.path_match_id = kwargs.get("path_match_id")
@@ -160,6 +185,9 @@ class PathMatchComponent(object):
         self.path_match_id = i
 
 class PathMatchTag(PathMatchComponent):
+    """Tag assigned to a path match rule.
+    
+    """
     def __init__(self, **kwargs):
         super(PathMatchTag, self).__init__(**kwargs)
         self.tag_name = kwargs.get("tag_name")
@@ -171,6 +199,9 @@ class PathMatchTag(PathMatchComponent):
     
 
 class PathMatchTemplate(PathMatchComponent):
+    """Template assigned to a patch match rule.
+    
+    """
     def __init__(self, **kwargs):
         super(PathMatchTemplate, self).__init__(**kwargs)
         self.template = kwargs.get("template")
@@ -180,6 +211,9 @@ class PathMatchTemplate(PathMatchComponent):
         self.template = template
 
 class PathRule(object):
+    """Path rule associated with a line rule.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("path_rule_id")
         self.pattern = kwargs.get("pattern")
@@ -194,6 +228,9 @@ class PathRule(object):
         return self.pattern
 
 class LineMatch(object):
+    """Line match rule associated with an outbox.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("line_match_id")
         self.outbox_id = kwargs.get("outbox_id")
@@ -225,6 +262,9 @@ class LineMatch(object):
         self.line_rules.append(line_rule)
 
 class LineRulePrepattern(object):
+    """Prepattern associated with a line rule.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("line_rule_prepattern_id")
         self.pattern = kwargs.get("line_rule_prepattern_pattern")
@@ -238,6 +278,9 @@ class LineRulePrepattern(object):
         self.pattern = pattern
 
 class LineRule(object):
+    """Tagging rule associated with a line rule.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.pattern = kwargs.get("pattern")
@@ -254,8 +297,8 @@ class LineRule(object):
         self.pattern = pattern
     def get_pattern(self):
         return self.pattern
-    def set_apply(self, apply):
-        self.apply = apply
+    def set_apply(self, ap):
+        self.apply = ap
     def get_apply(self):
         return self.apply
     def set_extract(self, extract):
@@ -273,13 +316,16 @@ class LineRule(object):
 
 # Instance classes
 class File(object):
+    """File statistics that describe a file retrieved during scan or register.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.filename = kwargs.get("filename")
         self.mtime = kwargs.get("mtime")
         self.size = kwargs.get("size")
         self.checksum = kwargs.get("checksum")
-        self.must_tag = kwargs.get("must_tag")
+        self.must_tag = kwargs.get("must_tag", True)
     def get_id(self):
         return self.id
     def set_id(self, i):
@@ -306,6 +352,9 @@ class File(object):
         return self.must_tag
 
 class ScanState(object):
+    """Current state of a scan.
+    
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("scan_state_id")
         self.state = kwargs.get("state")
@@ -321,11 +370,16 @@ class ScanState(object):
 scan_state_enum = ['SCAN_START', 'SCAN_COMPLETE', 'TAG_START', 'TAG_COMPLETE', 'REGISTER_START', 'REGISTER_COMPLETE', 'FAILED']
 
 class Scan(object):
+    """File scan that maintains information about its start/end time, current state, and files.
+
+    """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.start = kwargs.get("start")
         self.end = kwargs.get("end")
         self.state = ScanState(**kwargs)
+        self.files = []
+
     def set_id(self, i):
         self.id = id
     def get_id(self):
@@ -342,3 +396,9 @@ class Scan(object):
         self.state = state
     def get_state(self):
         return self.state
+    def get_files(self):
+        return self.files
+    def set_files(self, files):
+        self.files = files
+    def add_file(self, f):
+        self.files.append(f)
