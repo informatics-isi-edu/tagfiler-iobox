@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS scan (
 
 CREATE TABLE IF NOT EXISTS file (
     id INTEGER NOT NULL PRIMARY KEY,
-    filename TEXT NOT NULL UNIQUE,
+    filepath TEXT NOT NULL UNIQUE,
     mtime FLOAT8,
     size INTEGER,
     checksum TEXT,

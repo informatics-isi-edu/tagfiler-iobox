@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS exclusion_pattern (
 CREATE TABLE IF NOT EXISTS root (
     id INTEGER NOT NULL PRIMARY KEY,
     outbox_id INTEGER NOT NULL REFERENCES outbox(id),
-    filename TEXT NOT NULL
+    filepath TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS path_match (

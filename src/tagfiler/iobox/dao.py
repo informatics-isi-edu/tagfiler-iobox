@@ -16,18 +16,24 @@ logger = logging.getLogger(__name__)
 class DataDAO(object):
     sql_source_dir = os.path.join(os.path.dirname(iobox.__file__), "sql/")
    
-    def __init__(self, db_file, **kwargs):
+    def __init__(self, db_filepath, **kwargs):
+        """Constructs a DAO instance, creating the database schema in the database file if necessary
+        
+        Keyword arguments:
+        db_filepath -- filepath to use for the sqlite database
+        
+        """
         def _dict_factory(cursor, row):
             d = {}
             for idx, col in enumerate(cursor.description):
                 d[col[0]] = row[idx]
             return d
     
-        self.db_file = db_file
+        self.db_filepath = db_filepath
         # create outbox file if it doesn't exist
-        if not os.path.exists(self.db_file) and logger.isEnabledFor(INFO):
-            logger.info("Database file %s doesn't exist, creating." % self.db_file)
-        self.db = sqlite3.connect(self.db_file, detect_types=sqlite3.PARSE_DECLTYPES)
+        if not os.path.exists(self.db_filepath) and logger.isEnabledFor(INFO):
+            logger.info("Database file %s doesn't exist, creating." % self.db_filepath)
+        self.db = sqlite3.connect(self.db_filepath, detect_types=sqlite3.PARSE_DECLTYPES)
         self.db.row_factory = _dict_factory
     
     def close(self):
@@ -49,33 +55,28 @@ class OutboxDAO(DataDAO):
     """Data access object for the global outbox catalog.
     
     """
-    def __init__(self, db_file, **kwargs):
+    def __init__(self, db_filepath, **kwargs):
+        """Initializes an outbox data access instance.
+        
+        Keyword arguments:
+        db_filepath -- filepath of the sqlite database
         """
-        Initializes an outbox data access instance.
-        """
-        super(OutboxDAO, self).__init__(db_file, **kwargs)
-        self.outbox_name = kwargs.get("outbox_name")
+        super(OutboxDAO, self).__init__(db_filepath, **kwargs)
         
         # create outbox schema if it doesn't exist
         self._create_db_from_source(self.db, os.path.join(self.__class__.sql_source_dir, "outbox.sql"))
         
-        # lookup outbox by name and create it if it doesn't exist
-        outbox = self.get_outbox_by_name(self.outbox_name)
-        if outbox is None:
-            outbox = Outbox(**kwargs)
-            self.add_outbox(outbox)
-
-    def get_instance(self, outbox):
-        """Returns the DAO for this outbox instance.
+    def get_state_dao(self, outbox):
+        """Returns the DAO for an outbox's state.
         
         Keyword arguments:
         outbox -- outbox catalog object
         """
         
-        outbox_instance_file = os.path.join(os.path.dirname(self.db_file), "outbox_%i.db" % outbox.get_id())
-        return OutboxInstanceDAO(outbox, outbox_instance_file)
+        outbox_state_filepath = os.path.join(os.path.dirname(self.db_filepath), "outbox_%i.db" % outbox.get_id())
+        return OutboxStateDAO(outbox, outbox_state_filepath)
 
-    def get_outbox_by_name(self, outbox_name):
+    def find_outbox_by_name(self, outbox_name):
         """Retrieves an outbox catalog object by its assigned name, or None if it doesn't exist.
         
         Keyword arguments:
@@ -90,14 +91,14 @@ class OutboxDAO(DataDAO):
         cursor.close()
         if r is not None:
             outbox = Outbox(**r)
-            outbox.set_roots(self.get_outbox_roots(outbox))
-            outbox.set_inclusion_patterns(self.get_outbox_inclusion_patterns(outbox))
-            outbox.set_exclusion_patterns(self.get_outbox_exclusion_patterns(outbox))
-            outbox.set_path_matches(self.get_outbox_path_matches(outbox))
-            outbox.set_line_matches(self.get_outbox_line_matches(outbox))
+            outbox.set_roots(self.find_outbox_roots(outbox))
+            outbox.set_inclusion_patterns(self.find_outbox_inclusion_patterns(outbox))
+            outbox.set_exclusion_patterns(self.find_outbox_exclusion_patterns(outbox))
+            outbox.set_path_matches(self.find_outbox_path_matches(outbox))
+            outbox.set_line_matches(self.find_outbox_line_matches(outbox))
         return outbox
 
-    def get_outbox_roots(self, outbox):
+    def find_outbox_roots(self, outbox):
         """Retrieves the root search directories assigned to this outbox.
         
         Keyword arguments:
@@ -107,13 +108,13 @@ class OutboxDAO(DataDAO):
         roots = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
-        cursor.execute("SELECT id, filename, outbox_id FROM root WHERE outbox_id=?", p)
+        cursor.execute("SELECT id, filepath, outbox_id FROM root WHERE outbox_id=?", p)
         for r in cursor.fetchall():
             roots.append(Root(**r))
         cursor.close()
         return roots
 
-    def get_outbox_exclusion_patterns(self, outbox):
+    def find_outbox_exclusion_patterns(self, outbox):
         """Retrieves the exclusion patterns assigned to this outbox.
         
         Keyword arguments:
@@ -129,7 +130,7 @@ class OutboxDAO(DataDAO):
         cursor.close()
         return exclusion
 
-    def get_outbox_inclusion_patterns(self, outbox):
+    def find_outbox_inclusion_patterns(self, outbox):
         """Retrieves the inclusion patterns assigned to this outbox.
         
         Keyword arguments:
@@ -145,7 +146,7 @@ class OutboxDAO(DataDAO):
         cursor.close()
         return inclusion
     
-    def get_tagfiler(self, **kwargs):
+    def find_tagfiler(self, **kwargs):
         """Retrieves the tagfiler configuration object that matches the given arguments.
         
         Keyword arguments:
@@ -190,7 +191,7 @@ class OutboxDAO(DataDAO):
         # ensure tagfiler exists in the DB first
         if outbox.get_tagfiler().get_id() is None:
             t = {'tagfiler_url':outbox.get_tagfiler().get_url(), 'tagfiler_username':outbox.get_tagfiler().get_username()}
-            tagfiler = self.get_tagfiler(**t)
+            tagfiler = self.find_tagfiler(**t)
             if tagfiler is None:
                 self.add_tagfiler(outbox.get_tagfiler())
             else:
@@ -212,11 +213,11 @@ class OutboxDAO(DataDAO):
         
         """
         cursor = self.db.cursor()
-        p = (outbox.get_id(), root.get_filename())
-        cursor.execute("SELECT id FROM root WHERE outbox_id=? AND filename=?", p)
+        p = (outbox.get_id(), root.get_filepath())
+        cursor.execute("SELECT id FROM root WHERE outbox_id=? AND filepath=?", p)
         r = cursor.fetchone()
         if r is None:
-            cursor.execute("INSERT INTO root (outbox_id, filename) VALUES (?, ?)", p)
+            cursor.execute("INSERT INTO root (outbox_id, filepath) VALUES (?, ?)", p)
             cursor.execute("SELECT last_insert_rowid() as id")
             root.set_id(cursor.fetchone()["id"])
         else:
@@ -424,7 +425,7 @@ class OutboxDAO(DataDAO):
             template.set_id(cursor.fetchone()["id"])
         cursor.close()
 
-    def get_outbox_path_matches(self, outbox):
+    def find_outbox_path_matches(self, outbox):
         """Returns all of the path match rules assigned to the outbox.
         
         Keyword arguments:
@@ -439,12 +440,12 @@ class OutboxDAO(DataDAO):
         cursor.close()
         for r in result:
             pm = PathMatch(**r)
-            pm.set_tags(self.get_path_match_tags(pm))
-            pm.set_templates(self.get_path_match_templates(pm))
+            pm.set_tags(self.find_path_match_tags(pm))
+            pm.set_templates(self.find_path_match_templates(pm))
             path_matches.append(pm)
         return path_matches
 
-    def get_outbox_line_matches(self, outbox):
+    def find_outbox_line_matches(self, outbox):
         """Returns all of the line match rules assigned to the outbox.
         
         Keyword arguments:
@@ -459,11 +460,11 @@ class OutboxDAO(DataDAO):
         cursor.close()
         for r in results:
             line_match = LineMatch(**r)
-            line_match.set_line_rules(self.get_line_match_line_rules(line_match))
+            line_match.set_line_rules(self.find_line_match_line_rules(line_match))
             line_matches.append(line_match)
         return line_matches
     
-    def get_line_match_line_rules(self, line_match):
+    def find_line_match_line_rules(self, line_match):
         """Returns all of the line rules assigned to a line match rule.
         
         Keyword arguments:
@@ -480,7 +481,7 @@ class OutboxDAO(DataDAO):
             line_rules.append(LineRule(**r))
         return line_rules
 
-    def get_path_match_tags(self, path_match):
+    def find_path_match_tags(self, path_match):
         """Returns all of the tags assigned to a path match rule.
         
         Keyword arguments:
@@ -496,7 +497,7 @@ class OutboxDAO(DataDAO):
         cursor.close()
         return tags
 
-    def get_path_match_templates(self, path_match):
+    def find_path_match_templates(self, path_match):
         """Returns all of the templates assigned to a path match rule.
         
         Keyword arguments:
@@ -512,19 +513,19 @@ class OutboxDAO(DataDAO):
         cursor.close()
         return templates
 
-class OutboxInstanceDAO(DataDAO):
-    """Data Access Object for a particular outbox.
+class OutboxStateDAO(DataDAO):
+    """Data Access Object for a particular outbox's state.
     
     """
     
     def __init__(self, outbox, db_file):
-        super(OutboxInstanceDAO, self).__init__(db_file)
+        super(OutboxStateDAO, self).__init__(db_file)
         self.outbox = outbox
         
         # create the outbox instance if it doesn't exist
         self._create_db_from_source(self.db, os.path.join(self.__class__.sql_source_dir, "outbox_instance.sql"))
 
-    def get_scan_state(self, state_name):
+    def find_scan_state(self, state_name):
         """Returns the scan state object for a given scan state name.
         
         Keyword arguments:
@@ -546,7 +547,7 @@ class OutboxInstanceDAO(DataDAO):
             state.set_id(r['id'])
         return state
 
-    def get_all_scans(self):
+    def find_all_scans(self):
         """Returns all scans from the database.
         
         """
@@ -563,7 +564,7 @@ class OutboxInstanceDAO(DataDAO):
         """Adds a new scan and returns a scan object.
         
         """
-        start_state = self.get_scan_state('START_FILE_SCAN')
+        start_state = self.find_scan_state('START_FILE_SCAN')
         cursor = self.db.cursor()
         p = (time.time(), start_state.get_id())
         cursor.execute("INSERT INTO scan (start, scan_state_id) VALUES (?, ?)", p)
@@ -574,7 +575,7 @@ class OutboxInstanceDAO(DataDAO):
         cursor.close()
         return Scan(**r)
 
-    def get_last_scan(self):
+    def find_last_scan(self):
         """Retrieves the last scan that was started.
         
         """
@@ -585,20 +586,20 @@ class OutboxInstanceDAO(DataDAO):
         cursor.close()
         if r is not None:
             scan = Scan(**r)
-            scan.set_files(self.get_files_in_scan(scan))
+            scan.set_files(self.find_files_in_scan(scan))
         return scan
     
-    def get_file_by_name(self, filename):
-        """Retrieves a file object from the database matching the filename.
+    def find_file_by_path(self, filepath):
+        """Retrieves a file object from the database matching the file path.
         
         Keyword arguments:
-        filename -- fully qualified filename
+        filepath -- fully qualified filename
         
         """
         f = None
         cursor = self.db.cursor()
-        p = (filename,)
-        cursor.execute("SELECT id, filename, mtime, size, checksum, must_tag FROM file WHERE filename=?", p)
+        p = (filepath,)
+        cursor.execute("SELECT id, filepath, mtime, size, checksum, must_tag FROM file WHERE filepath=?", p)
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
@@ -613,12 +614,12 @@ class OutboxInstanceDAO(DataDAO):
         
         """
         cursor = self.db.cursor()
-        p = (f.get_filename(),)
-        cursor.execute("SELECT id FROM file WHERE filename=?", p)
+        p = (f.get_filepath(),)
+        cursor.execute("SELECT id FROM file WHERE filepath=?", p)
         r = cursor.fetchone()
         if r is None:
-            p = (f.get_filename(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag())
-            cursor.execute("INSERT INTO file (filename, mtime, size, checksum, must_tag) VALUES (?, ?, ?, ?, ?)", p)
+            p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag())
+            cursor.execute("INSERT INTO file (filepath, mtime, size, checksum, must_tag) VALUES (?, ?, ?, ?, ?)", p)
             cursor.execute("SELECT last_insert_rowid() AS id")
             f.set_id(cursor.fetchone()["id"])
         else:
@@ -634,8 +635,8 @@ class OutboxInstanceDAO(DataDAO):
         
         """
         cursor = self.db.cursor()
-        p = (f.get_filename(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag(), f.get_id())
-        cursor.execute("UPDATE file SET filename=?, mtime=?, size=?, checksum=?, must_tag=? WHERE id=?", p)
+        p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag(), f.get_id())
+        cursor.execute("UPDATE file SET filepath=?, mtime=?, size=?, checksum=?, must_tag=? WHERE id=?", p)
         cursor.close()
 
     def add_file_to_scan(self, scan, f):
@@ -646,6 +647,8 @@ class OutboxInstanceDAO(DataDAO):
         file -- file object
         
         """
+        if f.get_id() is None:
+            self.add_file(f)
         cursor = self.db.cursor()
         p = (scan.get_id(), f.get_id())
         cursor.execute("SELECT 1 FROM scan_files WHERE scan_id=? AND file_id=?", p)
@@ -653,7 +656,7 @@ class OutboxInstanceDAO(DataDAO):
             cursor.execute("INSERT INTO scan_files (scan_id, file_id) VALUES (?, ?)", p)
         cursor.close()
 
-    def get_files_in_scan(self, scan):
+    def find_files_in_scan(self, scan):
         """Returns all files associated with a particular scan.
         
         Keyword arguments:
@@ -663,8 +666,118 @@ class OutboxInstanceDAO(DataDAO):
         cursor = self.db.cursor()
         p = (scan.get_id(),)
         files = []
-        cursor.execute("SELECT f.id, f.filename, f.mtime, f.size, f.checksum, f.must_tag FROM scan_files AS s INNER JOIN file AS f ON (s.file_id=f.id) WHERE s.scan_id=?", p)
+        cursor.execute("SELECT f.id, f.filepath, f.mtime, f.size, f.checksum, f.must_tag FROM scan_files AS s INNER JOIN file AS f ON (s.file_id=f.id) WHERE s.scan_id=?", p)
         for r in cursor.fetchall():
             files.append(File(**r))
         cursor.close()
         return files
+
+    def finish_file_scan(self, scan):
+        """Completes a scan.
+        
+        Keyword arguments:
+        scan -- the scan to complete
+        
+        """
+        completed_state = self.find_scan_state('COMPLETED_FILE_SCAN')
+        end_time = time.time()
+        cursor = self.db.cursor()
+        p = (completed_state.get_id(), end_time, scan.get_id())
+        cursor.execute("UPDATE scan SET scan_state_id=?, end=? WHERE id=?", p)
+        cursor.close()
+        scan.set_state(completed_state)
+        scan.set_end(end_time)
+
+    def find_scans_to_tag(self):
+        """Retrieves a list of scans that need to be tagging.
+        
+        """
+        scans = []
+        cursor = self.db.cursor()
+        completed_state = self.find_scan_state('COMPLETED_FILE_SCAN')
+        start_tag_state = self.find_scan_state('START_FILE_TAGGING')
+        p = (completed_state.get_id(), start_tag_state.get_id())
+        cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) WHERE s.scan_state_id=? OR s.scan_state_id=?", p)
+        results = cursor.fetchall()
+        for r in results:
+            scan = Scan(**r)
+            scan.set_files(self.find_files_in_scan(scan))
+            scans.append(scan)
+        cursor.close()
+        return scans
+    
+    def register_file(self, f):
+        """Registers a file to be added to tagfiler.
+        
+        Keyword arguments:
+        f -- file object to register
+        
+        """
+        registered_file = RegisterFile()
+        registered_file.set_file(f)
+        cursor = self.db.cursor()
+        p = (f.get_id(),)
+        cursor.execute("SELECT id FROM register_file WHERE file_id=?", p)
+        r = cursor.fetchone()
+        if r is None:
+            cursor.execute("INSERT INTO register_file (file_id, added) VALUES (?, date('now'))", p)
+            cursor.execute("SELECT last_insert_rowid() AS id")
+            registered_file.set_id(cursor.fetchone()["id"])
+        else:
+            registered_file.set_id(r["id"])
+        cursor.close()
+        return registered_file
+
+    def add_tag_to_registered_file(self, register_file, tag):
+        """Adds a tag to include in registering a file.
+        
+        Keyword arguments:
+        register_file -- register file object
+        tag -- tag object to include
+        
+        """
+        cursor = self.db.cursor()
+        p = (register_file.get_id(), tag.get_tag_name(), tag.get_tag_value())
+        cursor.execute("SELECT id FROM register_tag WHERE register_file_id=? AND tag_name=? AND tag_value=?", p)
+        r = cursor.fetchone()
+        if r is None:
+            cursor.execute("INSERT INTO register_tag (register_file_id, tag_name, tag_value) VALUES (?, ?, ?)", p)
+            cursor.execute("SELECT last_insert_rowid() AS id")
+            tag.set_id(cursor.fetchone()["id"])
+        else:
+            tag.set_id(r["id"])
+        cursor.close()
+        register_file.add_tag(tag)
+        return tag
+
+    def find_tagged_files_to_register(self):
+        """Retrieves a list of all files to register.
+        
+        """
+        files = []
+        cursor = self.db.cursor()
+        cursor.execute("SELECT r.id AS register_file_id, r.added, f.id, f.filepath, f.mtime, f.size, f.checksum, f.must_tag FROM register_file AS r INNER JOIN file AS f ON (r.file_id=f.id) WHERE f.must_tag='FALSE'")
+        results = cursor.fetchall()
+        cursor.close()
+        for r in results:
+            f = RegisterFile(**r)
+            f.set_tags(self.find_tags_to_register(f))
+            files.append(f)
+        return files
+
+    def find_tags_to_register(self, register_file):
+        """Retrieves a list of all tags to include for a file to register
+        
+        Keyword arguments:
+        register_file -- register file object
+        
+        """
+        tags = []
+        cursor = self.db.cursor()
+        p = (register_file.get_id(),)
+        cursor.execute("SELECT id, register_file_id, tag_name, tag_value FROM register_tag WHERE register_file_id=?", p)
+        results = cursor.fetchall()
+        cursor.close()
+        for r in results:
+            tags.append(RegisterTag(**r))
+        return tags

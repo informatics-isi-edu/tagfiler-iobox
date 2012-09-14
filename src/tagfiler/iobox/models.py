@@ -20,10 +20,14 @@ class Outbox(object):
 
     def set_id(self, i):
         self.id = i
-    def get_name(self):
-        return self.name
+    
     def get_id(self):
         return self.id
+    def get_name(self):
+        return self.name
+    def set_name(self, name):
+        self.name = name
+    
     def get_tagfiler(self):
         return self.tagfiler
     def set_tagfiler(self, tagfiler):
@@ -74,10 +78,16 @@ class Tagfiler(object):
         self.id = i
     def get_url(self):
         return self.url
+    def set_url(self, url):
+        self.url = url
     def get_username(self):
         return self.username
+    def set_username(self, username):
+        self.username = username
     def get_password(self):
         return self.password
+    def set_password(self, password):
+        self.password = password
 
 class Root(object):
     """File scan root assigned to an outbox.
@@ -85,16 +95,16 @@ class Root(object):
     """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
-        self.filename = kwargs.get("filename")
+        self.filepath = kwargs.get("filepath")
     def get_id(self):
         return self.id
     def set_id(self, i):
         self.id = i
 
-    def get_filename(self):
-        return self.filename
-    def set_filename(self, filename):
-        self.filename = filename
+    def get_filepath(self):
+        return self.filepath
+    def set_filepath(self, filepath):
+        self.filepath = filepath
 
 class Pattern(object):
     """Abstract parent for patterns associated with an outbox.
@@ -321,7 +331,7 @@ class File(object):
     """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
-        self.filename = kwargs.get("filename")
+        self.filepath = kwargs.get("filepath")
         self.mtime = kwargs.get("mtime")
         self.size = kwargs.get("size")
         self.checksum = kwargs.get("checksum")
@@ -330,10 +340,10 @@ class File(object):
         return self.id
     def set_id(self, i):
         self.id = i
-    def set_filename(self, filename):
-        self.filename = filename
-    def get_filename(self):
-        return self.filename
+    def set_filepath(self, filepath):
+        self.filepath = filepath
+    def get_filepath(self):
+        return self.filepath
     def set_mtime(self, mtime):
         self.mtime = mtime
     def get_mtime(self):
@@ -364,10 +374,8 @@ class ScanState(object):
         return self.id
     def set_state(self, state):
         self.state = state
-    def get_state(self, state):
+    def get_state(self):
         return self.state
-
-scan_state_enum = ['SCAN_START', 'SCAN_COMPLETE', 'TAG_START', 'TAG_COMPLETE', 'REGISTER_START', 'REGISTER_COMPLETE', 'FAILED']
 
 class Scan(object):
     """File scan that maintains information about its start/end time, current state, and files.
@@ -402,3 +410,54 @@ class Scan(object):
         self.files = files
     def add_file(self, f):
         self.files.append(f)
+
+class RegisterTag(object):
+    """Tag that is assigned to a registered file.
+    
+    """
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id")
+        self.tag_name = kwargs.get("tag_name")
+        self.tag_value = kwargs.get("tag_value")
+        
+    def set_id(self, i):
+        self.id = i
+    def get_id(self):
+        return self.id
+    def get_tag_name(self):
+        return self.tag_name
+    def set_tag_name(self, tag_name):
+        self.tag_name = tag_name
+    def get_tag_value(self):
+        return self.tag_value
+    def set_tag_value(self, tag_value):
+        self.tag_value = tag_value
+
+class RegisterFile(object):
+    """File that should be registered in tagfiler
+    
+    """
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("register_file_id")
+        self.file = File(**kwargs)
+        self.added = kwargs.get("added")
+        self.tags = []
+
+    def get_id(self):
+        return self.id
+    def set_id(self, i):
+        self.id = i
+    def get_file(self):
+        return self.file
+    def set_file(self, f):
+        self.file = f
+    def get_added(self):
+        return self.added
+    def set_added(self, a):
+        self.added = a
+    def get_tags(self):
+        return self.tags
+    def set_tags(self, tags):
+        self.tags = tags
+    def add_tag(self, tag):
+        self.tags.append(tag)
