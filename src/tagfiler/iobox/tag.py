@@ -26,6 +26,6 @@ class Tag(worker.Worker):
     """A worker for performing the tag stage of the outbox pipeline."""
     
     def do_work(self, task, work_done):
-        logger.debug('Task:    %d' % task)
+        logger.debug('Task:    %s' % task)
         work_done(task)
         return
