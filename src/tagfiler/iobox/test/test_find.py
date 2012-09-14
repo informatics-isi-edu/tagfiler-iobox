@@ -17,7 +17,6 @@
 Unit tests for find module.
 """
 
-import os
 import unittest
 import logging
 import tempfile
