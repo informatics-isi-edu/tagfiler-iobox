@@ -17,3 +17,56 @@
 Unit tests for the outbox module.
 """
 
+from tagfiler.iobox.test.test_find import create_temp_dirtree, remove_temp_dirtree
+from tagfiler.iobox.cmdline import create_temp_outbox_dao, remove_temp_outbox_dao
+from tagfiler.iobox import models, outbox
+
+import unittest
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
+
+class Test(unittest.TestCase):
+
+    __OUTBOX_NAME   =  'temp_outbox'
+    __NUMROOTS      =  1
+    __NUMDIRS       =  1
+    __NUMFILES      =  10
+    
+    def setUp(self):
+        # Create the test directory tree
+        self.rootdirs = create_temp_dirtree(Test.__NUMROOTS, 
+                                            Test.__NUMDIRS, Test.__NUMFILES)
+        
+        # Create the temporary OutboxDAO and Outbox
+        p = {'outbox_name':Test.__OUTBOX_NAME, 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
+        (self.outbox_path, self.outbox_dao) = create_temp_outbox_dao(**p)
+        self.outbox_model = self.outbox_dao.get_outbox_by_name(Test.__OUTBOX_NAME)
+        
+        # Add the roots to the Outbox model object
+        for rootdir in self.rootdirs:
+            root = models.Root()
+            root.set_filename(rootdir)
+            self.outbox_dao.add_root_to_outbox(self.outbox_model, root)
+    
+    def tearDown(self):
+        # Remove the test directory tree
+        remove_temp_dirtree(self.rootdirs)
+        
+        # Remove the temporary OutboxDAO
+        remove_temp_outbox_dao(self.outbox_path, self.outbox_dao)
+
+    def testOutbox(self):
+        """Simple test for the Outbox."""
+        outbox_worker = outbox.Outbox(self.outbox_model)
+        outbox_worker.start()
+        outbox_worker.join() # TODO: Fix this Q&D synchronization!
+        logger.debug("testOutbox: done")
+
+
+if __name__ == "__main__":
+    #import sys;sys.argv = ['', 'Test.testName']
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main()

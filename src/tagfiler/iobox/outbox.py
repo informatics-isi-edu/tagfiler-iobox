@@ -26,7 +26,10 @@ from tagfiler.iobox import worker, find, tag, register
 
 logger = logging.getLogger(__name__)
 
-
+# It is very likely that this DOES NOT need to be a Thread. It just needs to
+# manage the pipeline of threads and/or threadpools that are doing the work.
+# One argument for keeping this threaded would be that the outbox might need
+# to be event-driven. But that's not certain right now.
 class Outbox(threading.Thread):
     """
     The Outbox class represents one outbox.
@@ -35,16 +38,17 @@ class Outbox(threading.Thread):
     files. It manages the scanning pipeline.
     """
     
-    def __init__(self, outbox_config):
+    def __init__(self, outbox_model):
         """Initializes the Outbox.
         
-        Arguments
-            outbox_config: the OutboxConfiguration object.
+        Arguments:
+            'outbox_model': the models.Outbox object the represents the
+                configuration of this outbox.
         """
         logger.debug("__init__")
         threading.Thread.__init__(self)
         self.setDaemon(True)            #TODO: uncomment this when done testing
-        self._config = outbox_config
+        self._model = outbox_model
         self._terminated = False
         
         # I really wonder whether I need to keep refs to these queues. Hmmmm...
@@ -57,6 +61,9 @@ class Outbox(threading.Thread):
         self._find = find.Find(self._find_q, self._tag_q)
         self._tag = tag.Tag(self._tag_q, self._register_q)
         self._register = register.Register(self._register_q, worker.WorkQueue())
+        
+        # Get outbox and populate Find's queue with the root directories.
+        self._find_q.put("/tmp")
 
     def terminate(self):
         """Flags the Outbox to exit gracefully."""
