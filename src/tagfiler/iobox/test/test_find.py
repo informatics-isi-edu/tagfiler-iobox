@@ -24,8 +24,6 @@ import tempfile
 import shutil
 import time
 
-import tagfiler.iobox.dao as dao
-from tagfiler.iobox.models import Outbox, Root
 import tagfiler.iobox.worker as worker
 import tagfiler.iobox.find as find
 
@@ -39,7 +37,6 @@ class Test(unittest.TestCase):
     
     def setUp(self):
         """Create a directory tree."""
-
         self.rootdirs = []
         for r in range(Test.__NUMROOTS):
             rootdir = tempfile.mkdtemp()
@@ -50,28 +47,11 @@ class Test(unittest.TestCase):
                 for j in range(Test.__NUMFILES):
                     tempfile.mkstemp(dir=currdir)
         
-        # Create Outbox DAO
-        '''
-        p = {'outbox_name':'test_find', 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
-        (self.outbox_file, self.outbox_path) = tempfile.mkstemp()
-        logger.debug("outbox_path: %s" % self.outbox_path)
-        self.outbox_dao = dao.OutboxDAO(self.outbox_path, **p)
-        
-        # Create an Outbox with 1 test root
-        self.outbox = self.outbox_dao.get_outbox_by_name('test_find')
-        root = Root()
-        root.set_filename("/tmp")
-        self.outbox_dao.add_root_to_outbox(self.outbox, root)
-        '''
-        
     def tearDown(self):
+        """Removes the test directory tree."""
         for rootdir in self.rootdirs:
             logger.debug("tearDown: rootdir: %s" % rootdir)
             shutil.rmtree(rootdir, ignore_errors=True)
-        '''
-        self.outbox_dao.close()
-        os.unlink(self.outbox_path)
-        '''
 
     def testFind(self):
         """Simple test for the Find worker."""
