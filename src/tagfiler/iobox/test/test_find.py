@@ -28,6 +28,28 @@ import tagfiler.iobox.find as find
 
 logger = logging.getLogger(__name__)
 
+
+def create_temp_dirtree(numroots, numdirs, numfiles):
+    """Creates a temporary directory and returns a list of root 'dirs'."""
+    rootdirs = []
+    for r in range(numroots):
+        rootdir = tempfile.mkdtemp()
+        logger.debug("create_temp_dirtree: %s" % rootdir)
+        rootdirs.append(rootdir)
+        for i in range(numdirs):
+            currdir = tempfile.mkdtemp(dir=rootdir)
+            for j in range(numfiles):
+                tempfile.mkstemp(dir=currdir)
+                
+    return rootdirs
+
+def remove_temp_dirtree(dirs=[]):
+    """Removes directory trees rooted in 'dirs' list."""
+    for rootdir in dirs:
+        logger.debug("remove_temp_dirtree: %s" % rootdir)
+        shutil.rmtree(rootdir, ignore_errors=True)
+
+
 class Test(unittest.TestCase):
 
     __NUMROOTS = 2
@@ -36,21 +58,12 @@ class Test(unittest.TestCase):
     
     def setUp(self):
         """Create a directory tree."""
-        self.rootdirs = []
-        for r in range(Test.__NUMROOTS):
-            rootdir = tempfile.mkdtemp()
-            logger.debug("setUp: rootdir: %s" % rootdir)
-            self.rootdirs.append(rootdir)
-            for i in range(Test.__NUMDIRS):
-                currdir = tempfile.mkdtemp(dir=rootdir)
-                for j in range(Test.__NUMFILES):
-                    tempfile.mkstemp(dir=currdir)
+        self.rootdirs = create_temp_dirtree(Test.__NUMROOTS, 
+                                            Test.__NUMDIRS, Test.__NUMFILES)
         
     def tearDown(self):
         """Removes the test directory tree."""
-        for rootdir in self.rootdirs:
-            logger.debug("tearDown: rootdir: %s" % rootdir)
-            shutil.rmtree(rootdir, ignore_errors=True)
+        remove_temp_dirtree(self.rootdirs)
 
     def testFind(self):
         """Simple test for the Find worker."""
