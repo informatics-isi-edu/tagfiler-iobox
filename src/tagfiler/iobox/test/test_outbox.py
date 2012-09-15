@@ -28,7 +28,7 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class Test(unittest.TestCase):
+class OutboxTest(unittest.TestCase):
 
     __OUTBOX_NAME   =  'temp_outbox'
     __NUMROOTS      =  1
@@ -37,14 +37,15 @@ class Test(unittest.TestCase):
     
     def setUp(self):
         # Create the test directory tree
-        self.rootdirs = create_temp_dirtree(Test.__NUMROOTS, 
-                                            Test.__NUMDIRS, Test.__NUMFILES)
+        self.rootdirs = create_temp_dirtree(OutboxTest.__NUMROOTS, 
+                                            OutboxTest.__NUMDIRS, 
+                                            OutboxTest.__NUMFILES)
         
         # Create the temporary OutboxDAO and Outbox
-        p = {'outbox_name':Test.__OUTBOX_NAME, 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
+        p = {'outbox_name':OutboxTest.__OUTBOX_NAME, 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
         (self.outbox_path, self.outbox_dao) = create_temp_outbox_dao()
         self.outbox_model = models.Outbox(**p)
-        self.outbox_model.set_name(Test.__OUTBOX_NAME)
+        self.outbox_model.set_name(OutboxTest.__OUTBOX_NAME)
         self.outbox_model = self.outbox_dao.add_outbox(self.outbox_model)
         
         # Add the roots to the Outbox model object
@@ -60,7 +61,7 @@ class Test(unittest.TestCase):
         # Remove the temporary OutboxDAO
         remove_temp_outbox_dao(self.outbox_path, self.outbox_dao)
 
-    def testOutbox(self):
+    def testBaseline(self):
         """Simple test for the Outbox."""
         outbox_worker = outbox.Outbox(self.outbox_model)
         outbox_worker.start()

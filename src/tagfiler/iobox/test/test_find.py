@@ -51,7 +51,7 @@ def remove_temp_dirtree(dirs=[]):
         shutil.rmtree(rootdir, ignore_errors=True)
 
 
-class Test(unittest.TestCase):
+class FindTest(unittest.TestCase):
 
     __NUMROOTS = 2
     __NUMDIRS = 5
@@ -59,14 +59,15 @@ class Test(unittest.TestCase):
     
     def setUp(self):
         """Create a directory tree."""
-        self.rootdirs = create_temp_dirtree(Test.__NUMROOTS, 
-                                            Test.__NUMDIRS, Test.__NUMFILES)
+        self.rootdirs = create_temp_dirtree(FindTest.__NUMROOTS, 
+                                            FindTest.__NUMDIRS, 
+                                            FindTest.__NUMFILES)
         
     def tearDown(self):
         """Removes the test directory tree."""
         remove_temp_dirtree(self.rootdirs)
 
-    def testFind(self):
+    def testBaseline(self):
         """Simple test for the Find worker."""
         
         find_q = worker.WorkQueue()
@@ -82,12 +83,14 @@ class Test(unittest.TestCase):
         find_q.join()
         find_worker.terminate()
         
-        assert tag_q.qsize() == (Test.__NUMROOTS + 
-                                 Test.__NUMROOTS * Test.__NUMDIRS +
-                                 Test.__NUMROOTS * Test.__NUMDIRS * Test.__NUMFILES)
+        self.assertEqual(tag_q.qsize(), 
+                         (FindTest.__NUMROOTS + 
+                          FindTest.__NUMROOTS * FindTest.__NUMDIRS +
+                          FindTest.__NUMROOTS * FindTest.__NUMDIRS * FindTest.__NUMFILES), 
+                         "Failed to find all directories and files in the temp dir")
         
-        time.sleep(1)
-        assert not find_worker.is_alive()
+        time.sleep(1) #TODO(schuler): Hate to do it this way
+        self.assertFalse(find_worker.is_alive(), "Find has not terminated")
 
 
 if __name__ == "__main__":

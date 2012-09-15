@@ -24,7 +24,7 @@ import tagfiler.iobox.worker as worker
 
 logger = logging.getLogger(__name__)
 
-class TestWorker(worker.Worker):
+class DummyWorker(worker.Worker):
     """A test worker.
     
     The test worker simulates a stage in a worker thread pipeline. It takes a
@@ -54,7 +54,7 @@ class TestWorker(worker.Worker):
             work_done(result)
 
 
-class Test(unittest.TestCase):
+class WorkerTest(unittest.TestCase):
     """The Unit Tests for worker module."""
 
     def testSingleStagePipeline(self):
@@ -71,7 +71,7 @@ class Test(unittest.TestCase):
         #task_queue_1.put(worker.Worker.DONE)
     
         # Create the test workers
-        stage1 = TestWorker(task_queue_1, task_queue_2, 1, 10)
+        stage1 = DummyWorker(task_queue_1, task_queue_2, 1, 10)
     
         # Start them in reverse order so they are waiting for stage 1 to start
         # producing tasks to propagate throught the pipeline.
@@ -82,8 +82,8 @@ class Test(unittest.TestCase):
         task_queue_1.join()
         stage1.terminate()
         
-        time.sleep(1)
-        assert not stage1.is_alive()
+        time.sleep(1) #TODO(schuler): hate to do it this way
+        self.assertFalse(stage1.is_alive(), "Worker is alive")
         
     def testThreeStagePipeline(self):
         """Tests a three stage pipeline."""
@@ -100,9 +100,9 @@ class Test(unittest.TestCase):
         #task_queue_1.put(worker.Worker.DONE)
     
         # Create the test workers
-        stage1 = TestWorker(task_queue_1, task_queue_2, 1, 10)
-        stage2 = TestWorker(task_queue_2, task_queue_3, 2, 5)
-        stage3 = TestWorker(task_queue_3, worker.WorkQueue(), 3, 5)
+        stage1 = DummyWorker(task_queue_1, task_queue_2, 1, 10)
+        stage2 = DummyWorker(task_queue_2, task_queue_3, 2, 5)
+        stage3 = DummyWorker(task_queue_3, worker.WorkQueue(), 3, 5)
     
         # Start them in reverse order so they are waiting for stage 1 to start
         # producing tasks to propagate throught the pipeline.
@@ -119,17 +119,13 @@ class Test(unittest.TestCase):
         stage2.terminate()
         stage3.terminate()
         
-        time.sleep(1)
-        assert not stage1.is_alive()
-        assert not stage2.is_alive()
-        assert not stage3.is_alive()
+        time.sleep(1) #TODO(schuler): hate to do it this way
+        self.assertFalse(stage1.is_alive(), "Stage 1 worker is alive")
+        self.assertFalse(stage2.is_alive(), "Stage 2 worker is alive")
+        self.assertFalse(stage3.is_alive(), "Stage 3 worker is alive")
 
 
 if __name__ == "__main__":
     """A standaline test of the three stage pipeline."""
-
     logging.basicConfig(level=logging.DEBUG)
-
-    logger.info('BEGIN')
     unittest.main()
-    logger.info('END')
