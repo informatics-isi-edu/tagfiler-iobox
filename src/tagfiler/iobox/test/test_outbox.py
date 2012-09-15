@@ -42,13 +42,15 @@ class Test(unittest.TestCase):
         
         # Create the temporary OutboxDAO and Outbox
         p = {'outbox_name':Test.__OUTBOX_NAME, 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
-        (self.outbox_path, self.outbox_dao) = create_temp_outbox_dao(**p)
-        self.outbox_model = self.outbox_dao.get_outbox_by_name(Test.__OUTBOX_NAME)
+        (self.outbox_path, self.outbox_dao) = create_temp_outbox_dao()
+        self.outbox_model = models.Outbox(**p)
+        self.outbox_model.set_name(Test.__OUTBOX_NAME)
+        self.outbox_model = self.outbox_dao.add_outbox(self.outbox_model)
         
         # Add the roots to the Outbox model object
         for rootdir in self.rootdirs:
             root = models.Root()
-            root.set_filename(rootdir)
+            root.set_filepath(rootdir)
             self.outbox_dao.add_root_to_outbox(self.outbox_model, root)
     
     def tearDown(self):

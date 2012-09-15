@@ -74,7 +74,7 @@ class Test(unittest.TestCase):
     
         for rootdir in self.rootdirs:
             root = models.Root()
-            root.set_filename(rootdir)
+            root.set_filepath(rootdir)
             find_q.put(root)
         
         find_worker = find.Find(find_q, tag_q)

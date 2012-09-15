@@ -33,12 +33,11 @@ logger = logging.getLogger(__name__)
 __EXIT_SUCCESS = 0
 __EXIT_FAILURE = 1
 
-def create_temp_outbox_dao(**kwargs):
+def create_temp_outbox_dao():
     """Creates an OutboxDAO using a temporary file.
     
-    This is useful for command-line instances of the Outbox that do not have a
-    saved configuration. It accepts 'kwargs' that are directly passed to the
-    OutboxDAO initializer.
+    This is intended for command-line instances of the Outbox that do not have
+    a saved configuration.
     
     Returns a tuple of (outbox_path, outbox_dao) where 'outbox_path' is the
     pathname to the temporary file that contains the Outbox database, and
@@ -46,11 +45,11 @@ def create_temp_outbox_dao(**kwargs):
     """
     (outbox_file, outbox_path) = tempfile.mkstemp()
     logger.debug("create_temp_outbox_dao: %s" % outbox_path)
-    outbox_dao = dao.OutboxDAO(outbox_path, **kwargs)
+    outbox_dao = dao.OutboxDAO(outbox_path)
     return (outbox_path, outbox_dao)
 
 def remove_temp_outbox_dao(outbox_path, outbox_dao):
-    """Removes an OutboxDAO backed by a temporary file.
+    """Closes and removes an OutboxDAO backed by a temporary file.
     
     Arguments:
         'outbox_path': required pathname to the temporary file.
@@ -79,12 +78,13 @@ def main():
     
     # Create the DAO
     p = {'outbox_name':'temp_outbox', 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
-    (outbox_path, outbox_dao) = create_temp_outbox_dao(**p)
+    (outbox_path, outbox_dao) = create_temp_outbox_dao()
     
     # Get the Outbox model object
-    outbox_model = outbox_dao.get_outbox_by_name('temp_outbox')
+    outbox_model = models.Outbox(**p)
+    outbox_model = outbox_dao.add_outbox(outbox_model)
     root = models.Root()
-    root.set_filename("/tmp")
+    root.set_filepath("/tmp")
     outbox_dao.add_root_to_outbox(outbox_model, root)
     
     outbox_manager = outbox.Outbox(outbox_model)

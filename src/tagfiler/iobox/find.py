@@ -41,7 +41,7 @@ class Find(worker.Worker):
         self._exclusion_patterns = exclusion_patterns
         
     def do_work(self, task, work_done):
-        path = task.get_filename() # We expect task to be of type models.Root
+        path = task.get_filepath() # We expect task to be of type models.Root
         logger.debug('Find:do_work: path: %s' % path)
         for fname in fileutil.tree_scan(path):
             logger.debug('Find:do_work: file: %s' % fname)
