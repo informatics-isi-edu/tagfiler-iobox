@@ -781,3 +781,16 @@ class OutboxStateDAO(DataDAO):
         for r in results:
             tags.append(RegisterTag(**r))
         return tags
+
+    def remove_registered_file_and_tags(self, registered_file):
+        """Removes the registered file and its tags from the database.
+        
+        Keyword arguments:
+        registered_file -- the registered file to remove
+        
+        """
+        p = (registered_file.get_id(),)
+        cursor = self.db.cursor()
+        cursor.execute("DELETE FROM register_tag WHERE register_file_id=?", p)
+        cursor.execute("DELETE FROM register_file WHERE id=?", p)
+        registered_file.set_id(None)
