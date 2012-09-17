@@ -42,6 +42,7 @@ class TagfilerClient(object):
         self.port = None
         if len(host_port) > 1:
             self.port = host_port[1]
+        self.baseuri = pieces[2]
         self.username = config.get_username()
         self.password = config.get_password()
         self.connection_class = None
@@ -56,7 +57,7 @@ class TagfilerClient(object):
     def _login(self, connection):
         headers = {}
         headers["Content-Type"] = "application/x-www-form-urlencoded"
-        resp = self.send_request(connection, "POST", "/webauthn/login", "username=%s&password=%s" % (self.username, self.password), headers)
+        resp = self._send_request(connection, "POST", "/webauthn/login", "username=%s&password=%s" % (self.username, self.password), headers)
         return resp.getheader("set-cookie")
     
     def _send_request(self, connection, method, url, body='', headers={}):
@@ -75,23 +76,45 @@ class TagfilerClient(object):
         
         """
         parsed_table = []
-        tag_names = set()
+        tag_names = []
         for register_file in register_files:
             parsed_dict = {}
             for tag in register_file.get_tags():
+                tag_list = parsed_dict.get(tag.get_tag_name(), [])
+                tag_list.append(tag.get_tag_value())
+                parsed_dict[tag.get_tag_name()] = tag_list
                 if tag.get_tag_name() != "name":
-                    tag_list = parsed_dict.get(tag.get_tag_name(), [])
-                    tag_list.append(tag.get_tag_value())
-                    parsed_dict[tag.get_tag_name()] = tag_list
                     if tag.get_tag_name() not in tag_names:
                         tag_names.append(tag.get_tag_name())
             parsed_table.append(parsed_dict)
         payload = jsonWriter(parsed_table)
-        bulkurl = '/tagfiler/subject/name(%s)' % ';'.join([ urllib.quote(tag) for tag in tag_names ])
+        bulkurl = '%s/subject/name(%s)' % (self.baseuri, ';'.join([ self._safequote(tag) for tag in tag_names ]))
         connection = self._create_connection()
-        login_cookie = self._login_request(connection)
+        login_cookie = self._login(connection)
         headers = {}
         headers["Content-Type"] = "application/json"
         headers["Cookie"] = login_cookie
-        self.send_request("PUT", bulkurl, payload, headers)
+        self._send_request(connection, "PUT", bulkurl, payload, headers)
         connection.close()
+
+    def register_file(self, register_file):
+        """Registers a single file in tagfiler
+        
+        Keyword arguments:
+        register_file -- register file object with tags
+        """
+        # Remove the name tag from the file tags, since this is specified outside the query string
+        tag_pairs = []
+        for tag in register_file.get_tags():
+            if tag.get_tag_name() != "name":
+                tag_pairs.append("%s=%s" % (self._safequote(tag.get_tag_name()), self._safequote(tag.get_tag_value())))
+        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(register_file.get_tag("name")[0].get_tag_value()), "&".join(tag_pairs))
+        connection = self._create_connection()
+        login_cookie = self._login(connection)
+        headers = {}
+        headers["Cookie"] = login_cookie
+        self._send_request(connection, "PUT", url, headers=headers)
+        connection.close()
+
+    def _safequote(self, s):
+        return urllib.quote(s, '')

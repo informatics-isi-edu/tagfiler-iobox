@@ -461,3 +461,9 @@ class RegisterFile(object):
         self.tags = tags
     def add_tag(self, tag):
         self.tags.append(tag)
+    def get_tag(self, tag_name):
+        tag = []
+        for t in self.tags:
+            if t.get_tag_name() == tag_name:
+                tag.append(t)
+        return tag
