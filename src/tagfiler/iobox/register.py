@@ -20,12 +20,14 @@ Placeholder for the register module.
 import logging
 import worker
 from tagfiler.util.http import TagfilerClient
+from tagfiler.iobox.dao import OutboxDAO
+import os
 
 logger = logging.getLogger(__name__)
 
 class Register(worker.Worker):
     
-    def __init__(self, tasks, results, dao, config):
+    def __init__(self, tasks, results, config):
         """Constructor
         
         Keyword arguments:
@@ -36,9 +38,8 @@ class Register(worker.Worker):
         """
         super(Register, self).__init__(tasks, results)
         self._config = config
-        self._dao = dao
         self._client = TagfilerClient(config)
-        
+
     def do_work(self, task, work_done):
         """Performs register work on a task.
         
@@ -48,5 +49,8 @@ class Register(worker.Worker):
         """
         logger.debug('Task:        %s' % task)
         self._client.add_subject(task)
-        self._dao.remove_registered_file(task)
+        
+        # TODO: cleanup register_file entry in the database.  SQLite won't allow an object constructed in one
+        # thread to be used in another -- do I have to create a DAO in each do_work invocation?
+        
         work_done(task)
