@@ -17,9 +17,11 @@
 Placeholder for the find module.
 """
 
+import tagfiler.iobox.worker as worker
+from tagfiler.util.files import tree_scan_stats
+from tagfiler.iobox.models import File
+
 import logging
-import worker
-import tagfiler.util.files as fileutil
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +35,20 @@ class Find(worker.Worker):
         Arguments:
             tasks: a WorkQueue of tasks.
             results: a WorkQueue of results.
-            inclusion_patterns: optional 'InclusionPattern' list
-            exclusion_patterns: optional 'ExclusionPattern' list
+            inclusion_patterns: optional list of 'InclusionPattern' objects
+            exclusion_patterns: optional list of 'ExclusionPattern' objects
         """
         worker.Worker.__init__(self, tasks, results)
         self._inclusion_patterns = inclusion_patterns
         self._exclusion_patterns = exclusion_patterns
         
     def do_work(self, task, work_done):
-        path = task.get_filepath() # We expect task to be of type models.Root
+        root = task # We expect task to be of type models.Root
+        path = root.get_filepath()
         logger.debug('Find:do_work: path: %s' % path)
-        for fname in fileutil.tree_scan(path):
-            logger.debug('Find:do_work: file: %s' % fname)
-            work_done(fname)
+        for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
+            logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
+                         (rfpath, size, mtime, user, group))
+            f = File(filepath=rfpath, size=size, mtime=mtime, 
+                     user=user, group=group, must_tag=True)
+            work_done(f)
