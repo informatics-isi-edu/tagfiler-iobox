@@ -34,11 +34,12 @@ class Outbox():
     provides management interfaces to start and terminate the pipeline.
     """
     
-    def __init__(self, outbox_model):
+    def __init__(self, outbox_model, state_dao):
         """Initializes the Outbox according to the required 'outbox_model'
         parameter of type 'models.Outbox'."""
         logger.debug("Outbox:__init__")
         self._model = outbox_model
+        self._state_dao = state_dao
         self._terminated = False
         
         self._find_q = worker.WorkQueue()
@@ -55,7 +56,10 @@ class Outbox():
                                self._model.get_inclusion_patterns(),
                                self._model.get_exclusion_patterns())
         self._tag = tag.Tag(self._tag_q, self._register_q)
-        self._register = register.Register(self._register_q, worker.WorkQueue())
+        self._register = register.Register(
+                                    self._register_q, worker.WorkQueue(),
+                                    self._state_dao, 
+                                    self._model.get_tagfiler())
         
 
     def terminate(self):

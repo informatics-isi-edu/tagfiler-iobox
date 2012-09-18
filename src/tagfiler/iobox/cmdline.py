@@ -33,6 +33,18 @@ logger = logging.getLogger(__name__)
 __EXIT_SUCCESS = 0
 __EXIT_FAILURE = 1
 
+# Used by ArgumentParser
+__PROG = "tagfiler-outbox"
+__DESC = "Tagfiler Outbox"
+__VER  = "%(prog)s 0.1 beta" # (schuler): Just making that up!
+
+# Verbosity to Loglevel dictionary
+__LOGLEVEL = {0: logging.ERROR,
+              1: logging.WARNING,
+              2: logging.INFO,
+              3: logging.DEBUG}
+__LOGLEVEL_MAX = 3
+
 def create_temp_outbox_dao():
     """Creates an OutboxDAO using a temporary file.
     
@@ -59,22 +71,27 @@ def remove_temp_outbox_dao(outbox_path, outbox_dao):
     outbox_dao.close()
     os.unlink(outbox_path)
 
-def main():
+def main(args=None):
     """
     The main routine.
-    """
-    parser = argparse.ArgumentParser(prog='tagfiler-iobox', 
-                                     description='Tagfiler IOBox')
-    parser.add_argument('--verbose', '-v', action='count')
-    parser.add_argument('--version', action='version', 
-                        version='%(prog)s 0.1 beta')
-    parser.add_argument('rootdir', nargs='+', type=str, 
-                        default=sys.stdin, 
-                        help='root directories of the outbox')
-    args = parser.parse_args(['/tmp'])
     
-    # TODO: Use a verbosity flag to set the level
-    logging.basicConfig(level=logging.DEBUG)
+    Optionally accepts 'args' but this is more of a convenience for unit 
+    testing this module. It passes 'args' directly to the ArgumentParser's
+    parse_args(...) method.
+    """
+    parser = argparse.ArgumentParser(prog=__PROG, description=__DESC)
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--version', action='version', version=__VER)
+    parser.add_argument('rootdir', nargs='+', type=str, default=sys.stdin, 
+                        help='root directories of the outbox')
+    args = parser.parse_args()
+    
+    # Turn verbosity into a loglevel setting for the global logger
+    if args.verbose:
+        if args.verbose > __LOGLEVEL_MAX:
+            logging.basicConfig(level=__LOGLEVEL[__LOGLEVEL_MAX])
+        else:
+            logging.basicConfig(level=__LOGLEVEL[args.verbose])
     
     # Create the DAO
     p = {'outbox_name':'temp_outbox', 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
@@ -83,11 +100,15 @@ def main():
     # Get the Outbox model object
     outbox_model = models.Outbox(**p)
     outbox_model = outbox_dao.add_outbox(outbox_model)
-    root = models.Root()
-    root.set_filepath("/tmp")
-    outbox_dao.add_root_to_outbox(outbox_model, root)
+    state_dao = outbox_dao.get_state_dao(outbox_model)
     
-    outbox_manager = outbox.Outbox(outbox_model)
+    # Add the roots from the command-line
+    for rootdir in args.rootdir:
+        root = models.Root()
+        root.set_filepath(rootdir)
+        outbox_dao.add_root_to_outbox(outbox_model, root)
+    
+    outbox_manager = outbox.Outbox(outbox_model, state_dao)
     outbox_manager.start()
     outbox_manager.join()
     outbox_manager.terminate()

@@ -47,6 +47,7 @@ class OutboxTest(unittest.TestCase):
         self.outbox_model = models.Outbox(**p)
         self.outbox_model.set_name(OutboxTest.__OUTBOX_NAME)
         self.outbox_model = self.outbox_dao.add_outbox(self.outbox_model)
+        self.state_dao = self.outbox_dao.get_state_dao(self.outbox_model)
         
         # Add the roots to the Outbox model object
         for rootdir in self.rootdirs:
@@ -63,7 +64,7 @@ class OutboxTest(unittest.TestCase):
 
     def testBaseline(self):
         """Simple test for the Outbox."""
-        outbox_worker = outbox.Outbox(self.outbox_model)
+        outbox_worker = outbox.Outbox(self.outbox_model, self.state_dao)
         outbox_worker.start()
         outbox_worker.join() # TODO: Fix this Q&D synchronization!
         outbox_worker.terminate()
