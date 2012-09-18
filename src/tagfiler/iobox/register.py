@@ -19,11 +19,34 @@ Placeholder for the register module.
 
 import logging
 import worker
+from tagfiler.util.http import TagfilerClient
 
 logger = logging.getLogger(__name__)
 
 class Register(worker.Worker):
     
+    def __init__(self, tasks, results, dao, config):
+        """Constructor
+        
+        Keyword arguments:
+        tasks -- ?
+        results -- ?
+        dao -- the outbox state dao that this task is associated with
+        config -- the tagfiler configuration to use to communicate with the service
+        """
+        super(Register, self).__init__(tasks, results)
+        self._config = config
+        self._dao = dao
+        self._client = TagfilerClient(config)
+        
     def do_work(self, task, work_done):
+        """Performs register work on a task.
+        
+        Keyword arguments:
+        task -- register file object to add to tagfiler
+        work_done -- callback to run on the registered file.
+        """
         logger.debug('Task:        %s' % task)
-        return
+        self._client.add_subject(task)
+        self._dao.remove_registered_file(task)
+        work_done(task)

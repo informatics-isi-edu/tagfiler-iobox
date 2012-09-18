@@ -5,7 +5,10 @@ Created on Sep 14, 2012
 '''
 import urlparse
 import urllib
-from httplib import HTTPConnection, HTTPSConnection, OK, CREATED, ACCEPTED, NO_CONTENT, HTTPException
+import logging
+from httplib import HTTPConnection, HTTPSConnection, OK, CREATED, ACCEPTED, NO_CONTENT, HTTPException, SEE_OTHER
+
+logger = logging.getLogger(__name__)
 
 try:
     import simplejson
@@ -63,11 +66,11 @@ class TagfilerClient(object):
     def _send_request(self, connection, method, url, body='', headers={}):
         connection.request(method, url, body, headers)
         resp = connection.getresponse()
-        if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT]:
+        if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
             raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
         return resp
     
-    def register_files(self, register_files):
+    def add_subjects(self, register_files):
         """Registers a list of files and tags in tagfiler using a single request.
         
         Keyword arguments:
@@ -97,7 +100,7 @@ class TagfilerClient(object):
         self._send_request(connection, "PUT", bulkurl, payload, headers)
         connection.close()
 
-    def register_file(self, register_file):
+    def add_subject(self, register_file):
         """Registers a single file in tagfiler
         
         Keyword arguments:
@@ -115,6 +118,28 @@ class TagfilerClient(object):
         headers["Cookie"] = login_cookie
         self._send_request(connection, "PUT", url, headers=headers)
         connection.close()
+
+    def find_subject_by_name(self, name):
+        """Looks up a subject by its name tag in tagfiler and returns a dictionary if found, None otherwise
+        
+        Keyword arguments:
+        name -- name to query
+        """
+        subject = None
+        url = "%s/tags/name=%s" % (self.baseuri, self._safequote(name))
+        
+        connection = self._create_connection()
+        login_cookie = self._login(connection)
+        headers = {}
+        headers["Cookie"] = login_cookie
+        headers["Accept"] = "application/json"
+        try:
+            resp = self._send_request(connection, "GET", url, headers=headers)
+            subject = jsonReader(resp.read())
+        except HTTPException,e:
+            logger.error(e)
+        connection.close()
+        return subject
 
     def _safequote(self, s):
         return urllib.quote(s, '')

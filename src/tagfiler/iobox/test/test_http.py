@@ -25,7 +25,7 @@ class TestTagfilerClient(unittest.TestCase):
         self.state_dao.close()
         self.dao.close()
         
-    def testRegisterFile(self):
+    def testAddAndFindSubject(self):
         import random
         f = File()
         f.set_filepath("/home/smithd/tagfiler_test%s.jpg" % unicode(random.random()))
@@ -34,7 +34,8 @@ class TestTagfilerClient(unittest.TestCase):
         register_file = self.state_dao.register_file(f)
         t = RegisterTag()
         t.set_tag_name("name")
-        t.set_tag_value("file://smithd#tagfiler_ep%s" % f.get_filepath())
+        name = "file://smithd#tagfiler_ep%s" % f.get_filepath()
+        t.set_tag_value(name)
         self.state_dao.add_tag_to_registered_file(register_file, t)
         t = RegisterTag()
         t.set_tag_name("session")
@@ -46,9 +47,13 @@ class TestTagfilerClient(unittest.TestCase):
         self.state_dao.add_tag_to_registered_file(register_file, t)
         
         tagfiler_client = TagfilerClient(config=self.outbox.get_tagfiler())
-        tagfiler_client.register_file(register_file)
+        tagfiler_client.add_subject(register_file)
         
-    def testRegisterFiles(self):
+        result = tagfiler_client.find_subject_by_name(name)
+        assert result is not None
+        assert result[0]['name'] == name
+
+    def testAddSubjects(self):
         import random
         files = []
         for i in range(1, 10):
@@ -67,6 +72,6 @@ class TestTagfilerClient(unittest.TestCase):
             self.state_dao.add_tag_to_registered_file(register_file, t)
             files.append(register_file)
         tagfiler_client = TagfilerClient(config=self.outbox.get_tagfiler())
-        tagfiler_client.register_files(files)
+        tagfiler_client.add_subjects(files)
 if __name__ == "__main__":
     unittest.main()
