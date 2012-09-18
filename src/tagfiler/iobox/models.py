@@ -15,8 +15,8 @@ class Outbox(object):
         self.roots = []
         self.inclusion_patterns = []
         self.exclusion_patterns = []
-        self.path_matches = []
-        self.line_matches = []
+        self.path_rules = []
+        self.line_rules = []
 
     def set_id(self, i):
         self.id = i
@@ -50,18 +50,18 @@ class Outbox(object):
         self.exclusion_patterns = exclusion_patterns
     def add_exclusion_pattern(self, exclusion_pattern):
         self.exclusion_patterns.append(exclusion_pattern)
-    def get_path_matches(self):
-        return self.path_matches
-    def set_path_matches(self, path_matches):
-        self.path_matches = path_matches
-    def add_path_match(self, path_match):
-        self.path_matches.append(path_match)
-    def get_line_matches(self):
-        return self.line_matches
-    def set_line_matches(self, line_matches):
-        self.line_matches = line_matches
-    def add_line_match(self, line_match):
-        self.line_matches.append(line_match)
+    def get_path_rules(self):
+        return self.path_rules
+    def set_path_rules(self, path_rules):
+        self.path_rules = path_rules
+    def add_path_rule(self, path_rule):
+        self.path_rules.append(path_rule)
+    def get_line_rules(self):
+        return self.line_rules
+    def set_line_rules(self, line_rules):
+        self.line_rules = line_rules
+    def add_line_rule(self, line_rule):
+        self.line_rules.append(line_rule)
 
 class Tagfiler(object):
     """Tagfiler configuration object that retains information about its url, username, and password.
@@ -134,16 +134,19 @@ class InclusionPattern(Pattern):
     """
     pass
 
-class PathMatch(object):
-    """Path match rule associated with an outbox.
+class RERule(object):
+    """Regular expression used in an outbox for tagging.
     
     """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
-        self.outbox_id = kwargs.get("outbox_id")
         self.name = kwargs.get("name")
+        self.prepattern = None # TODO: populate?
         self.pattern = kwargs.get("pattern")
-        self.extract = kwargs.get("extract")
+        self.apply = kwargs.get("apply", "match")
+        self.extract = kwargs.get("extract", "single")
+        self.rewrites = []
+        self.constants = []
         self.tags = []
         self.templates = []
 
@@ -155,10 +158,18 @@ class PathMatch(object):
         self.name = name
     def get_name(self):
         return self.name
+    def set_prepattern(self, prepattern):
+        self.prepattern = prepattern
+    def get_prepattern(self):
+        return self.prepattern
     def set_pattern(self, pattern):
         self.pattern = pattern
     def get_pattern(self):
         return self.pattern
+    def set_apply(self, a):
+        self.apply = a
+    def get_apply(self):
+        return self.apply
     def set_extract(self, extract):
         self.extract = extract
     def get_extract(self):
@@ -169,9 +180,18 @@ class PathMatch(object):
         self.tags = tags
     def add_tag(self, tag):
         self.tags.append(tag)
-    def set_outbox_id(self, i):
-        self.outbox_id = i
-
+    def get_rewrites(self):
+        return self.rewrites
+    def set_rewrites(self, rewrites):
+        self.rewrites = rewrites
+    def add_rewrite(self, rewrite):
+        self.rewrites.append(rewrite)
+    def get_constants(self):
+        return self.constants
+    def set_constants(self, constants):
+        self.constants = constants
+    def add_constant(self, constant):
+        self.constants.append(constant)
     def get_templates(self):
         return self.templates
     def set_templates(self, templates):
@@ -179,27 +199,48 @@ class PathMatch(object):
     def add_template(self, template):
         self.templates.append(template)
 
-class PathMatchComponent(object):
-    """Abstract parent for components associated with a path match rule.
+class PathRule(RERule):
+    pass
+
+class LineRule(object):
+    def __init__(self, **kwargs):
+        self.path_rule = None
+        self.rerules = []
+        
+    def get_path_rule(self):
+        return self.path_rule
+    def set_path_rule(self, path_rule):
+        self.path_rule = path_rule
+    def get_rerules(self):
+        return self.rerules
+    def set_rerules(self, rerules):
+        self.rerules = rerules
+    def add_rerule(self, rerule):
+        self.rerules.append(rerule)
+
+class RERuleComponent(object):
+    """Abstract parent for components associated with a rerule.
     
     """
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
-        self.path_match_id = kwargs.get("path_match_id")
+        self.rerule_id = kwargs.get("rerule_id")
         
     def get_id(self):
         return self.id
     def set_id(self, i):
         self.id = i
-    def set_path_match_id(self, i):
-        self.path_match_id = i
+    def set_rerule_id(self, i):
+        self.rerule_id = i
+    def get_rerule_id(self):
+        return self.rerule_id
 
-class PathMatchTag(PathMatchComponent):
-    """Tag assigned to a path match rule.
+class RERuleTag(RERuleComponent):
+    """Tag assigned to a rerule.
     
     """
     def __init__(self, **kwargs):
-        super(PathMatchTag, self).__init__(**kwargs)
+        super(RERuleTag, self).__init__(**kwargs)
         self.tag_name = kwargs.get("tag_name")
 
     def get_tag_name(self):
@@ -208,121 +249,53 @@ class PathMatchTag(PathMatchComponent):
         self.tag_name = tag_name
     
 
-class PathMatchTemplate(PathMatchComponent):
-    """Template assigned to a patch match rule.
+class RERuleTemplate(RERuleComponent):
+    """Template assigned to a rerule.
     
     """
     def __init__(self, **kwargs):
-        super(PathMatchTemplate, self).__init__(**kwargs)
+        super(RERuleTemplate, self).__init__(**kwargs)
         self.template = kwargs.get("template")
     def get_template(self):
         return self.template
     def set_template(self, template):
         self.template = template
 
-class PathRule(object):
-    """Path rule associated with a line rule.
+class RERuleConstant(RERuleComponent):
+    """Constant assigned to a rerule.
     
     """
     def __init__(self, **kwargs):
-        self.id = kwargs.get("path_rule_id")
-        self.pattern = kwargs.get("pattern")
+        super(RERuleConstant, self).__init__(**kwargs)
+        self.constant_name = kwargs.get("constant_name")
+        self.constant_value = kwargs.get("constant_value")
+    def set_constant_name(self, constant_name):
+        self.constant_name = constant_name
+    def get_constant_name(self):
+        return self.constant_name
+    def set_constant_value(self, constant_value):
+        self.constant_value = constant_value
+    def get_constant_value(self):
+        return self.constant_value
 
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def set_pattern(self, pattern):
-        self.pattern = pattern
-    def get_pattern(self):
-        return self.pattern
-
-class LineMatch(object):
-    """Line match rule associated with an outbox.
+class RERuleRewrite(RERuleComponent):
+    """Rewrite patterns and templates for a rerule.
     
     """
     def __init__(self, **kwargs):
-        self.id = kwargs.get("line_match_id")
-        self.outbox_id = kwargs.get("outbox_id")
-        self.name = kwargs.get("name")
-        self.path_rule = PathRule(**kwargs)
-        self.line_rules = []
+        super(RERuleRewrite, self).__init__(**kwargs)
+        self.rewrite_pattern = kwargs.get("rewrite_pattern")
+        self.rewrite_template = kwargs.get('rewrite_template')
+    def get_rewrite_pattern(self):
+        return self.rewrite_pattern
+    def set_rewrite_pattern(self, rewrite_pattern):
+        self.rewrite_pattern = rewrite_pattern
+        
+    def get_rewrite_template(self):
+        return self.rewrite_template
+    def set_rewrite_template(self, rewrite_template):
+        self.rewrite_template = rewrite_template
 
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def set_outbox_id(self, i):
-        self.outbox_id = i
-    def get_outbox_id(self):
-        return self.outbox_id
-    def set_name(self, name):
-        self.name = name
-    def get_name(self):
-        return self.name
-    def get_path_rule(self):
-        return self.path_rule
-    def set_path_rule(self, path_rule):
-        self.path_rule = path_rule
-    def get_line_rules(self):
-        return self.line_rules
-    def set_line_rules(self, line_rules):
-        self.line_rules = line_rules
-    def add_line_rule(self, line_rule):
-        self.line_rules.append(line_rule)
-
-class LineRulePrepattern(object):
-    """Prepattern associated with a line rule.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("line_rule_prepattern_id")
-        self.pattern = kwargs.get("line_rule_prepattern_pattern")
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def get_pattern(self):
-        return self.pattern
-    def set_pattern(self, pattern):
-        self.pattern = pattern
-
-class LineRule(object):
-    """Tagging rule associated with a line rule.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.pattern = kwargs.get("pattern")
-        self.apply = kwargs.get("apply")
-        self.extract = kwargs.get("extract")
-        self.line_match_id = kwargs.get("line_match_id")
-        self.prepattern = LineRulePrepattern(**kwargs)
-
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def set_pattern(self, pattern):
-        self.pattern = pattern
-    def get_pattern(self):
-        return self.pattern
-    def set_apply(self, ap):
-        self.apply = ap
-    def get_apply(self):
-        return self.apply
-    def set_extract(self, extract):
-        self.extract = extract
-    def get_extract(self):
-        return self.extract
-    def get_prepattern(self):
-        return self.prepattern
-    def set_prepattern(self, prepattern):
-        self.prepattern = prepattern
-    def set_line_match_id(self, line_match_id):
-        self.line_match_id = line_match_id
-    def get_line_match_id(self):
-        return self.line_match_id
 
 # Instance classes
 class File(object):

@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 class Tag(worker.Worker):
     """A worker for performing the tag stage of the outbox pipeline."""
     
+    def __init__(self, tasks, results, rules):
+        super(Tag, self).__init__(tasks, results)
+        self.rules = rules
+
     def do_work(self, task, work_done):
         logger.debug('Task:    %s' % task)
         work_done(task)

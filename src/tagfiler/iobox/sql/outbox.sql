@@ -31,48 +31,67 @@ CREATE TABLE IF NOT EXISTS root (
     filepath TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS path_match (
+CREATE TABLE IF NOT EXISTS rerule (
     id INTEGER NOT NULL PRIMARY KEY,
-    outbox_id INTEGER NOT NULL REFERENCES outbox(id),
     name TEXT,
+    prepattern_id INTEGER REFERENCES rerule(id),
     pattern TEXT NOT NULL,
-    extract TEXT
+    extract TEXT,
+    apply TEXT
 );
 
-CREATE TABLE IF NOT EXISTS path_match_tag(
+CREATE TABLE IF NOT EXISTS rerule_tag(
     id INTEGER NOT NULL PRIMARY KEY,
-    path_match_id INTEGER NOT NULL REFERENCES path_match(id),
+    rerule_id INTEGER NOT NULL REFERENCES rerule(id),
     tag_name TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS path_match_template(
+CREATE TABLE IF NOT EXISTS rerule_template(
     id INTEGER NOT NULL PRIMARY KEY,
-    path_match_id INTEGER NOT NULL REFERENCES path_match(id),
+    rerule_id INTEGER NOT NULL REFERENCES rerule(id),
     template TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS rerule_rewrite(
+    id INTEGER NOT NULL PRIMARY KEY,
+    rerule_id INTEGER NOT NULL REFERENCES rerule(id),
+    rewrite_pattern TEXT NOT NULL,
+    rewrite_template TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rerule_constant(
+    id INTEGER NOT NULL PRIMARY KEY,
+    rerule_id INTEGER NOT NULL REFERENCES rerule(id),
+    constant_name TEXT NOT NULL,
+    constant_value TEXT,
+    UNIQUE(rerule_id, constant_name)
+);
+
 CREATE TABLE IF NOT EXISTS path_rule(
-    id INTEGER NOT NULL PRIMARY KEY,
-    pattern TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS line_match(
-    id INTEGER NOT NULL PRIMARY KEY,
-    outbox_id INTEGER NOT NULL REFERENCES outbox(id),
-    name TEXT,
-    path_rule_id INTEGER NOT NULL REFERENCES path_rule(id)
-);
-
-CREATE TABLE IF NOT EXISTS line_rule_prepattern(
-    id INTEGER NOT NULL PRIMARY KEY,
-    pattern TEXT NOT NULL
+    rerule_id INTEGER NOT NULL PRIMARY KEY REFERENCES rerule(id)
 );
 
 CREATE TABLE IF NOT EXISTS line_rule(
     id INTEGER NOT NULL PRIMARY KEY,
-    line_rule_prepattern_id INTEGER REFERENCES line_rule_prepattern(id),
-    pattern TEXT,
-    apply TEXT,
-    extract TEXT,
-    line_match_id INTEGER NOT NULL REFERENCES line_match(id)
+    path_rule_id INTEGER REFERENCES path_rule(id)
+);
+
+CREATE TABLE IF NOT EXISTS line_rule_rerule(
+    id INTEGER NOT NULL PRIMARY KEY,
+    line_rule_id INTEGER NOT NULL REFERENCES line_rule(id),
+    rerule_id INTEGER NOT NULL REFERENCES rerule(id)
+);
+
+CREATE TABLE IF NOT EXISTS outbox_path_rule(
+    id INTEGER NOT NULL PRIMARY KEY,
+    outbox_id INTEGER NOT NULL REFERENCES outbox(id),
+    path_rule_id INTEGER NOT NULL REFERENCES path_rule(id),
+    UNIQUE(outbox_id, path_rule_id)
+);
+
+CREATE TABLE IF NOT EXISTS outbox_line_rule(
+    id INTEGER NOT NULL PRIMARY KEY,
+    outbox_id INTEGER NOT NULL REFERENCES outbox(id),
+    line_rule_id INTEGER NOT NULL REFERENCES line_rule(id),
+    UNIQUE(outbox_id, line_rule_id)
 );

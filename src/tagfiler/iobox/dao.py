@@ -94,8 +94,8 @@ class OutboxDAO(DataDAO):
             outbox.set_roots(self.find_outbox_roots(outbox))
             outbox.set_inclusion_patterns(self.find_outbox_inclusion_patterns(outbox))
             outbox.set_exclusion_patterns(self.find_outbox_exclusion_patterns(outbox))
-            outbox.set_path_matches(self.find_outbox_path_matches(outbox))
-            outbox.set_line_matches(self.find_outbox_line_matches(outbox))
+            outbox.set_path_rules(self.find_outbox_path_rules(outbox))
+            #outbox.set_line_matches(self.find_outbox_line_matches(outbox))
         return outbox
 
     def find_outbox_roots(self, outbox):
@@ -265,254 +265,218 @@ class OutboxDAO(DataDAO):
             exclusion_pattern.set_id(r["id"])
         outbox.add_exclusion_pattern(exclusion_pattern)
     
-    def add_path_match_to_outbox(self, outbox, path_match):
-        """Adds a path match rule to the outbox in the database and appends it to the local object.
-        
-        Keyword arguments:
-        outbox -- outbox configuration object
-        path_match -- path match rule object
-        
-        """
-        cursor = self.db.cursor()
-        p = (outbox.get_id(), path_match.get_name(), path_match.get_pattern(), path_match.get_extract())
-        cursor.execute("SELECT id FROM path_match WHERE outbox_id=? AND name=? AND pattern=? AND extract=?", p)
-        r = cursor.fetchone()
-        if r is None:
-            cursor.execute("INSERT INTO path_match (outbox_id, name, pattern, extract) VALUES (?, ?, ?, ?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            path_match.set_outbox_id(outbox.get_id())
-            path_match.set_id(cursor.fetchone()['id'])
-        else:
-            path_match.set_id(r['id'])
-        cursor.close()
-
-        for tag in path_match.get_tags():
-            self.add_path_match_tag(path_match, tag)
-            
-        for template in path_match.get_templates():
-            self.add_path_match_template(path_match, template)
-
-        outbox.add_path_match(path_match)
-    
-    def add_line_match_to_outbox(self, outbox, line_match):
-        """Adds a line match rule to the outbox in the database and appends it to the local object.
-        
-        Keyword arguments:
-        outbox -- outbox configuration object
-        line_match -- line match rule object
-        
-        """
-        cursor = self.db.cursor()
-        p = (outbox.get_id(), line_match.get_name(), line_match.get_path_rule().get_pattern())
-        cursor.execute("SELECT l.id FROM line_match AS l INNER JOIN path_rule AS p ON (l.path_rule_id=p.id) WHERE l.outbox_id=? AND l.name=? AND p.pattern=?", p)
-        r = cursor.fetchone()
-        if r is None:
-            if line_match.get_path_rule().get_id() is None:
-                self.add_path_rule(line_match.get_path_rule())
-            p = (outbox.get_id(), line_match.get_name(), line_match.get_path_rule().get_id())
-            cursor.execute("INSERT INTO line_match (outbox_id, name, path_rule_id) VALUES (?, ?, ?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            line_match.set_outbox_id(outbox.get_id())
-            line_match.set_id(cursor.fetchone()["id"])
-            for line_rule in line_match.get_line_rules():
-                self.add_line_match_rule(line_match, line_rule)
-        else:
-            line_match.set_id(r["id"])
-        cursor.close()
-        outbox.add_line_match(line_match)
-        
-    def add_line_match_rule(self, line_match, line_rule):
-        """Adds a line rule to the line match rule in the database.
-        
-        Keyword arguments:
-        line_match -- line match object
-        line_rule -- line rule object
-        
-        """
-        cursor = self.db.cursor()
-        if line_rule.get_prepattern() is not None:
-            self.add_line_rule_prepattern(line_rule.get_prepattern())
-
-        p = (line_match.get_id(), line_rule.get_pattern(), line_rule.get_apply(), line_rule.get_extract(), line_rule.get_prepattern().get_id())
-        cursor.execute("SELECT id FROM line_rule WHERE line_match_id=? AND pattern=? AND apply=? AND extract=? AND line_rule_prepattern_id=?", p)
-        r = cursor.fetchone()
-        if r is None:
-            cursor.execute("INSERT INTO line_rule (line_match_id, pattern, apply, extract, line_rule_prepattern_id) VALUES (?, ?, ?, ?, ?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            line_rule.set_line_match_id(line_match.get_id())
-            line_rule.set_id(cursor.fetchone()['id'])
-        else:
-            line_rule.set_id(r['id'])
-        cursor.close()
-    
-    def add_line_rule_prepattern(self, line_rule_prepattern):
-        """Adds a line rule prepattern to the database.
-        
-        Keyword arguments:
-        line_rule_prepattern: line rule prepattern object
-        
-        """
-        cursor = self.db.cursor()
-        p = (line_rule_prepattern.get_pattern(),)
-        cursor.execute("SELECT id FROM line_rule_prepattern WHERE pattern=?", p)
-        r = cursor.fetchone()
-        if r is None:
-            cursor.execute("INSERT INTO line_rule_prepattern (pattern) VALUES (?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            line_rule_prepattern.set_id(cursor.fetchone()["id"])
-        else:
-            line_rule_prepattern.set_id(r['id'])
-        cursor.close()
-
     def add_path_rule(self, path_rule):
-        """Adds a path rule to the database.
+        """Adds a path_rule to the database.
         
-        Keyword arguments:
+        keyword arguments:
         path_rule -- path rule object
-        
         """
+        self.add_rerule(path_rule)
         cursor = self.db.cursor()
-        p = (path_rule.get_pattern(),)
-        cursor.execute("SELECT id FROM path_rule WHERE pattern = ?", p)
-        r = cursor.fetchone()
-        if r is None:
-            cursor.execute("INSERT INTO path_rule (pattern) VALUES (?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            path_rule.set_id(cursor.fetchone()["id"])
-        else:
-            path_rule.set_id(r["id"])
+        p = (path_rule.get_id(),)
+        cursor.execute("INSERT INTO path_rule (rerule_id) VALUES (?)", p)
         cursor.close()
 
-    def add_path_match_tag(self, path_match, tag):
-        """Adds a tag to a path_match rule in the database.
+    def add_rerule(self, rerule):
+        """Adds a rerule object to the database.
         
         Keyword arguments:
-        path_match -- path_match object
-        tag -- tag object
-        
+        rerule -- rerule object
         """
         cursor = self.db.cursor()
-        p = (path_match.get_id(), tag.get_tag_name())
-        cursor.execute("SELECT id FROM path_match_tag WHERE path_match_id=? AND tag_name=?", p)
-        r = cursor.fetchone()
-        if r is None:
-            cursor.execute("INSERT INTO path_match_tag (path_match_id, tag_name) VALUES (?, ?)", p)
-            cursor.execute("SELECT last_insert_rowid() AS id")
-            tag.set_path_match_id(path_match.get_id())
-            tag.set_id(cursor.fetchone()["id"])
+        if rerule.get_prepattern() is not None:
+            if rerule.get_prepattern().get_id() is None:
+                self.add_rerule(rerule.get_prepattern())
+            p = (rerule.get_name(), rerule.get_pattern().get_id(), rerule.get_extract(), rerule.get_apply(), rerule.get_pattern())
+            cursor.execute("INSERT INTO rerule (name, prepattern_id, extract, apply, pattern) VALUES (?, ?, ?, ?, ?)", p)
         else:
-            tag.set_id(r['id'])
+            p = (rerule.get_name(), rerule.get_extract(), rerule.get_apply(), rerule.get_pattern())
+            cursor.execute("INSERT INTO rerule (name, extract, apply, pattern) VALUES (?, ?, ?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        rerule.set_id(cursor.fetchone()["id"])
         cursor.close()
 
-    def add_path_match_template(self, path_match, template):
-        """Adds a path match template to the database.
+        # Save child elements
+        for constant in rerule.get_constants():
+            self.add_rerule_constant(rerule, constant)
+        for tag in rerule.get_tags():
+            self.add_rerule_tag(rerule, tag)
+        for template in rerule.get_templates():
+            self.add_rerule_template(rerule, template)
+        for rewrite in rerule.get_rewrites():
+            self.add_rerule_rewrite(rerule, rewrite)
+
+    def add_rerule_constant(self, rerule, constant):
+        """Adds a rerule constant to the database.
         
         Keyword arguments:
-        path_match: path match object
-        template: path match template object
-        
+        rerule -- rerule object
+        constant -- constant object
         """
+        p = [rerule.get_id(), constant.get_constant_name()]
         cursor = self.db.cursor()
-        p = (path_match.get_id(), template.get_template())
-        cursor.execute("SELECT id FROM path_match_template WHERE path_match_id=? AND template=?", p)
+        cursor.execute("SELECT id FROM rerule_constant WHERE rerule_id=? AND constant_name=?", p)
         r = cursor.fetchone()
         if r is None:
-            cursor.execute("INSERT INTO path_match_template (path_match_id, template) VALUES (?, ?)", p)
+            p.append(constant.get_constant_value())
+            cursor.execute("INSERT INTO rerule_constant (rerule_id, constant_name, constant_value) VALUES (?, ?, ?)", p)
             cursor.execute("SELECT last_insert_rowid() AS id")
-            template.set_path_match_id(path_match.get_id())
-            template.set_id(cursor.fetchone()["id"])
+            constant.set_id(cursor.fetchone()["id"])
         else:
-            template.set_id(cursor.fetchone()["id"])
+            constant.set_id(r["id"])
+        cursor.close()
+    
+    def add_rerule_tag(self, rerule, tag):
+        """Adds a rerule tag to the database.
+        
+        keyword arguments:
+        rerule -- rerule object
+        tag -- rerule tag object
+        """
+        p = (rerule.get_id(), tag.get_tag_name())
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO rerule_tag (rerule_id, tag_name) VALUES (?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        tag.set_id(cursor.fetchone()["id"])
+        cursor.close()
+    
+    def add_rerule_template(self, rerule, template):
+        """Adds a rerule template to the database.
+        
+        Keyword arguments:
+        rerule -- rerule object
+        template -- template object
+        """
+        p = (rerule.get_id(), template.get_template())
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO rerule_template (rerule_id, template) VALUES (?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        template.set_id(cursor.fetchone()["id"])
         cursor.close()
 
-    def find_outbox_path_matches(self, outbox):
+    def add_rerule_rewrite(self, rerule, rewrite):
+        """Adds a rerule rewrite to the database.
+        
+        Keyword arguments:
+        rerule -- rerule object
+        rewrite -- rewrite object
+        """
+        p = (rerule.get_id(), rewrite.get_rewrite_pattern(), rewrite.get_rewrite_template())
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO rerule_rewrite (rerule_id, rewrite_pattern, rewrite_template) VALUES (?, ?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        rewrite.set_id(cursor.fetchone()["id"])
+        cursor.close()
+
+    def add_path_rule_to_outbox(self, outbox, path_rule):
+        """Adds a path rule to the database and appends it to the outbox object.
+        
+        Keyword arguments:
+        outbox -- outbox object
+        path_rule -- path_rule object
+        """
+        self.add_path_rule(path_rule)
+        cursor = self.db.cursor()
+        p = (outbox.get_id(), path_rule.get_id())
+        cursor.execute("INSERT INTO outbox_path_rule (outbox_id, path_rule_id) VALUES (?, ?)", p)
+        outbox.add_path_rule(path_rule)
+        cursor.close()
+
+    def find_outbox_path_rules(self, outbox):
         """Returns all of the path match rules assigned to the outbox.
         
         Keyword arguments:
         outbox -- outbox configuration object
         
         """
-        path_matches = []
+        path_rules = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
-        cursor.execute("SELECT id, outbox_id, name, pattern, extract FROM path_match WHERE outbox_id=?", p)
+        cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.pattern, r.extract, r.apply FROM outbox_path_rule AS o INNER JOIN path_rule AS p ON (o.path_rule_id=p.rerule_id) INNER JOIN rerule AS r ON (p.rerule_id=r.id) WHERE o.outbox_id=?", p)
         result = cursor.fetchall()
         cursor.close()
         for r in result:
-            pm = PathMatch(**r)
-            pm.set_tags(self.find_path_match_tags(pm))
-            pm.set_templates(self.find_path_match_templates(pm))
-            path_matches.append(pm)
-        return path_matches
+            pr = PathRule(**r)
+            # don't join this field in case it is too recursive
+            if r["prepattern_id"] is not None:
+                p = (r["prepattern_id"],)
+                cursor = self.db.cursor()
+                cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.pattern, r.extract, r.apply FROM rerule AS r WHERE r.id=?", p)
+                r1 = cursor.fetchone()
+                pr.set_prepattern(RERule(**r1))
+                cursor.close()
+            pr.set_tags(self.find_rerule_tags(pr))
+            pr.set_templates(self.find_rerule_templates(pr))
+            pr.set_constants(self.find_rerule_constants(pr))
+            pr.set_rewrites(self.find_rerule_rewrites(pr))
+            path_rules.append(pr)
+        
+        return path_rules
 
-    def find_outbox_line_matches(self, outbox):
-        """Returns all of the line match rules assigned to the outbox.
+    def find_rerule_tags(self, rerule):
+        """Returns all of the tags assigned to a rerule.
         
         Keyword arguments:
-        outbox -- outbox configuration object
-        
-        """
-        line_matches = []
-        cursor = self.db.cursor()
-        p = (outbox.get_id(),)
-        cursor.execute("SELECT l.id, l.outbox_id, l.name, l.path_rule_id, p.pattern FROM line_match AS l INNER JOIN path_rule AS p ON (l.path_rule_id=p.id) WHERE l.outbox_id=?", p)
-        results = cursor.fetchall()
-        cursor.close()
-        for r in results:
-            line_match = LineMatch(**r)
-            line_match.set_line_rules(self.find_line_match_line_rules(line_match))
-            line_matches.append(line_match)
-        return line_matches
-    
-    def find_line_match_line_rules(self, line_match):
-        """Returns all of the line rules assigned to a line match rule.
-        
-        Keyword arguments:
-        line_match -- line match rule object
-        
-        """
-        line_rules = []
-        cursor = self.db.cursor()
-        p = (line_match.get_id(),)
-        cursor.execute("SELECT l.id, l.line_rule_prepattern_id, l.pattern, l.apply, l.extract, l.line_match_id, p.pattern as line_rule_prepattern FROM line_rule AS l LEFT JOIN line_rule_prepattern AS p ON (l.line_rule_prepattern_id=p.id) WHERE l.line_match_id=?", p)
-        results = cursor.fetchall()
-        cursor.close()
-        for r in results:
-            line_rules.append(LineRule(**r))
-        return line_rules
-
-    def find_path_match_tags(self, path_match):
-        """Returns all of the tags assigned to a path match rule.
-        
-        Keyword arguments:
-        path_match -- path match rule object
+        rerule -- rerule object
         
         """
         tags = []
         cursor = self.db.cursor()
-        p = (path_match.get_id(),)
-        cursor.execute("SELECT id, path_match_id, tag_name FROM path_match_tag WHERE path_match_id = ?", p)
+        p = (rerule.get_id(),)
+        cursor.execute("SELECT id, rerule_id, tag_name FROM rerule_tag WHERE rerule_id = ?", p)
         for r in cursor.fetchall():
-            tags.append(PathMatchTag(**r))
+            tags.append(RERuleTag(**r))
         cursor.close()
         return tags
 
-    def find_path_match_templates(self, path_match):
-        """Returns all of the templates assigned to a path match rule.
+    def find_rerule_templates(self, rerule):
+        """Returns all of the templates assigned to a rerule.
         
         Keyword arguments:
-        path_match -- path match rule object
+        rerule - rerule object
         
         """
         templates = []
         cursor = self.db.cursor()
-        p = (path_match.get_id(),)
-        cursor.execute("SELECT id, path_match_id, template FROM path_match_template WHERE path_match_id=?", p)
+        p = (rerule.get_id(),)
+        cursor.execute("SELECT id, rerule_id, template FROM rerule_template WHERE rerule_id=?", p)
         for r in cursor.fetchall():
-            templates.append(PathMatchTemplate(**r))
+            templates.append(RERuleTemplate(**r))
         cursor.close()
         return templates
 
+    def find_rerule_constants(self, rerule):
+        """Returns all of the constants assigned to a rerule
+        
+        Keyword arguments:
+        rerule -- rerule object
+        
+        """
+        constants = []
+        cursor = self.db.cursor()
+        p = (rerule.get_id(),)
+        cursor.execute("SELECT id, rerule_id, constant_name, constant_value FROM rerule_constant WHERE rerule_id=?", p)
+        for r in cursor.fetchall():
+            constants.append(RERuleConstant(**r))
+        cursor.close()
+        return constants
+    
+    def find_rerule_rewrites(self, rerule):
+        """Returns all rewrites assigned to a rerule
+        
+        Keyword arguments:
+        rerule -- rerule object
+        
+        """
+        rewrites = []
+        cursor = self.db.cursor()
+        p = (rerule.get_id(),)
+        cursor.execute("SELECT id, rerule_id, rewrite_pattern, rewrite_template FROM rerule_rewrite WHERE rerule_id=?", p)
+        for r in cursor.fetchall():
+            rewrites.append(RERuleRewrite(**r))
+        cursor.close()
+        return rewrites
+    
 class OutboxStateDAO(DataDAO):
     """Data Access Object for a particular outbox's state.
     

@@ -5,6 +5,7 @@ Created on Sep 17, 2012
 '''
 import unittest
 import random
+import time
 from tagfiler.iobox.models import File, RegisterTag
 from tagfiler.iobox.dao import OutboxDAO
 from tagfiler.iobox.test.test_dao import create_test_outbox
@@ -56,6 +57,7 @@ class TestRegister(unittest.TestCase):
         register_q.join()
         register.terminate()
         
+        time.sleep(1)
         assert register_q.qsize() == 0
         assert finish_q.qsize() == 1
         

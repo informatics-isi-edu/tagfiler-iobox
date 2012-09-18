@@ -7,8 +7,11 @@ Created on Sep 10, 2012
 import unittest
 import os
 import time
+import logging
 from tagfiler.iobox.models import *
 from tagfiler.iobox.dao import OutboxDAO
+
+logger = logging.getLogger(__name__)
 
 def create_test_outbox():
     outbox = Outbox()
@@ -86,29 +89,59 @@ class TestOutboxDAO(unittest.TestCase):
             assert p.get_id() is not None
         outbox = self.dao.find_outbox_by_name('test_outbox')
         assert outbox.get_inclusion_patterns() is not None and len(outbox.get_inclusion_patterns()) == 2
-    def testAddPathMatch(self):
+    def testAddPathRule(self):
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_path_matches() is not None and len(outbox.get_path_matches()) == 0
-        p1 = PathMatch()
-        p1.set_name("assign directory tags")
-        p1.set_pattern('^/.*/studies/([^/]+)/([^/]+)/')
-        p1.set_extract("positional")
-        t1 = PathMatchTag()
-        t1.set_tag_name("date")
-        t2 = PathMatchTag()
-        t2.set_tag_name("session")
+        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 0
+        pattern_str = '^/.*/studies/([^/]+)/([^/]+)/'
+        name_str = "assign directory tags"
+        extract_str = "positional"
+        tag1_str = "date"
+        tag2_str = "session"
+        template_str = "some kind of template <1> and <2>"
+        rewrite_pattern_str = ".*"
+        rewrite_template_str = "<hello>"
+        constant_name_str = "test"
+        constant_value_str = "hello"
+        apply_str = "template"
+        
+        p1 = PathRule()
+        p1.set_name(name_str)
+        p1.set_pattern(pattern_str)
+        p1.set_extract(extract_str)
+        p1.set_apply(apply_str)
+        t1 = RERuleTag()
+        t1.set_tag_name(tag1_str)
+        t2 = RERuleTag()
+        t2.set_tag_name(tag2_str)
         p1.add_tag(t1)
         p1.add_tag(t2)
-        tmpl = PathMatchTemplate()
-        tmpl.set_template("some kind of template <1> and <2>")
+        tmpl = RERuleTemplate()
+        tmpl.set_template(template_str)
         p1.add_template(tmpl)
-        self.dao.add_path_match_to_outbox(outbox, p1)
-        assert len(outbox.get_path_matches()) == 1
-        for p in outbox.get_path_matches():
+        r1 = RERuleRewrite()
+        r1.set_rewrite_pattern(rewrite_pattern_str)
+        r1.set_rewrite_template(rewrite_template_str)
+        p1.add_rewrite(r1)
+        c1 = RERuleConstant()
+        c1.set_constant_name(constant_name_str)
+        c1.set_constant_value(constant_value_str)
+        p1.add_constant(c1)
+        
+        self.dao.add_path_rule_to_outbox(outbox, p1)
+        assert len(outbox.get_path_rules()) == 1
+        for p in outbox.get_path_rules():
             assert p.get_id() is not None
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_path_matches() is not None and len(outbox.get_path_matches()) == 1
-    
+        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 1
+        path_rule = outbox.get_path_rules()[0]
+        assert path_rule.get_pattern() == pattern_str
+        assert path_rule.get_extract() == extract_str
+        assert path_rule.get_apply() == apply_str
+        assert len(path_rule.get_tags()) == 2 and path_rule.get_tags()[0].get_tag_name() == tag1_str
+        assert len(path_rule.get_templates()) == 1 and path_rule.get_templates()[0].get_template() == template_str
+        assert len(path_rule.get_rewrites()) == 1 and path_rule.get_rewrites()[0].get_rewrite_pattern() == rewrite_pattern_str
+        assert len(path_rule.get_constants()) == 1 and path_rule.get_constants()[0].get_constant_name() == constant_name_str
+    """
     def testAddLineMatch(self):
         outbox = self.dao.find_outbox_by_name('test_outbox')
         assert outbox.get_line_matches() is not None and len(outbox.get_line_matches()) == 0
@@ -132,7 +165,7 @@ class TestOutboxDAO(unittest.TestCase):
             assert l.get_id() is not None
         outbox = self.dao.find_outbox_by_name('test_outbox')
         assert outbox.get_line_matches() is not None and len(outbox.get_line_matches()) == 1
-
+    """
 class TestOutboxStateDAO(unittest.TestCase):
     def setUp(self):
         import tempfile
@@ -339,4 +372,5 @@ class TestOutboxStateDAO(unittest.TestCase):
             assert len(f.get_tags()) > 1
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
