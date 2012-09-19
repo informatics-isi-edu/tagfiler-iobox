@@ -27,16 +27,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def all():
+def all_tests():
     """Returns a test suite containing all test suites for all modules."""
     suite = unittest.TestSuite()
-    suite.addTest(test_worker.all())
-    suite.addTest(test_http.all())
-    suite.addTest(test_dao.all())
-    suite.addTest(test_find.all())
-    suite.addTest(test_tag.all())
-    suite.addTest(test_register.all())
-    suite.addTest(test_outbox.all())
+    suite.addTest(test_worker.all_tests())
+    suite.addTest(test_http.all_tests())
+    suite.addTest(test_dao.all_tests())
+    suite.addTest(test_find.all_tests())
+    suite.addTest(test_tag.all_tests())
+    suite.addTest(test_register.all_tests())
+    suite.addTest(test_outbox.all_tests())
     # New test suites should be added here...
     return suite
 
@@ -44,5 +44,5 @@ def all():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
     runner = unittest.TextTestRunner()
-    test_suite = all()
+    test_suite = all_tests()
     runner.run(test_suite)

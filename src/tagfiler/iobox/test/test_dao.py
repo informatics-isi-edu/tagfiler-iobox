@@ -29,7 +29,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def all():
+def all_tests():
     suite = unittest.TestSuite()
     # Add test cases to suite
     return suite

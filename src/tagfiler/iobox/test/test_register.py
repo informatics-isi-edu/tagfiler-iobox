@@ -28,7 +28,7 @@ import random
 import time
 
 
-def all():
+def all_tests():
     """Returns a TestSuite that includes all test cases in this module."""
     suite = unittest.TestSuite()
     suite.addTest(RegisterTest())
