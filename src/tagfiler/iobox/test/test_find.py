@@ -17,15 +17,17 @@
 Unit tests for find module.
 """
 
+import tagfiler.iobox.worker as worker
+import tagfiler.iobox.find as find
+import tagfiler.iobox.models as models
+import tagfiler.iobox.test.base as base
+
 import unittest
 import logging
 import tempfile
 import shutil
 import time
 
-import tagfiler.iobox.worker as worker
-import tagfiler.iobox.find as find
-import tagfiler.iobox.models as models
 
 logger = logging.getLogger(__name__)
 
@@ -51,23 +53,18 @@ def remove_temp_dirtree(dirs=[]):
         shutil.rmtree(rootdir, ignore_errors=True)
 
 
-class FindTest(unittest.TestCase):
-
-    __NUMROOTS = 2
-    __NUMDIRS = 5
-    __NUMFILES = 10
+class FindTest(base.OutboxBaseTestCase):
     
-    def setUp(self):
-        """Create a directory tree."""
-        self.rootdirs = create_temp_dirtree(FindTest.__NUMROOTS, 
-                                            FindTest.__NUMDIRS, 
-                                            FindTest.__NUMFILES)
-        
-    def tearDown(self):
-        """Removes the test directory tree."""
-        remove_temp_dirtree(self.rootdirs)
+    def get_numroots(self):
+        return 2
+    
+    def get_numdirs(self):
+        return 5
+    
+    def get_numfiles(self):
+        return 10
 
-    def testBaseline(self):
+    def runTest(self):
         """Simple test for the Find worker."""
         
         find_q = worker.WorkQueue()
@@ -78,16 +75,16 @@ class FindTest(unittest.TestCase):
             root.set_filepath(rootdir)
             find_q.put(root)
         
-        find_worker = find.Find(find_q, tag_q)
+        find_worker = find.Find(find_q, tag_q, self.state_dao)
         find_worker.start()
         find_q.join()
         find_worker.terminate()
         
         self.assertEqual(tag_q.qsize(), 
-                         (FindTest.__NUMROOTS + 
-                          FindTest.__NUMROOTS * FindTest.__NUMDIRS +
-                          FindTest.__NUMROOTS * FindTest.__NUMDIRS * FindTest.__NUMFILES), 
-                         "Failed to find all directories and files in the temp dir")
+            (self.get_numroots() + 
+             self.get_numroots() * self.get_numdirs() + 
+             self.get_numroots() * self.get_numdirs() * self.get_numfiles()), 
+            "Failed to find all directories and files in the temp dir")
         
         time.sleep(1) #TODO(schuler): Hate to do it this way
         self.assertFalse(find_worker.is_alive(), "Find has not terminated")
