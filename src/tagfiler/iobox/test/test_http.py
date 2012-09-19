@@ -24,6 +24,14 @@ import base
 import unittest
 
 
+def all():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(TagfilerAddAndFindSubjectsTest())
+    suite.addTest(TagfilerAddSubjectsTest())
+    return suite
+
+
 class TagfilerAddAndFindSubjectsTest(base.OutboxBaseTestCase):
         
     def runTest(self):

@@ -28,6 +28,13 @@ import random
 import time
 
 
+def all():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(RegisterTest())
+    return suite
+
+
 class RegisterTest(base.OutboxBaseTestCase):
 
     def runTest(self):

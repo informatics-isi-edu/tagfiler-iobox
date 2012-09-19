@@ -28,16 +28,18 @@ logger = logging.getLogger(__name__)
 
 
 def all():
+    """Returns a test suite containing all test suites for all modules."""
     suite = unittest.TestSuite()
-    suite.addTest(test_worker.SingleStageWorkerTest())
-    suite.addTest(test_worker.MultiStageWorkerTest())
-    suite.addTest(test_find.FindTest())
-    suite.addTest(test_tag.TagTest())
-    suite.addTest(test_register.RegisterTest())
-    suite.addTest(test_http.TagfilerAddSubjectsTest())
-    suite.addTest(test_http.TagfilerAddAndFindSubjectsTest())
-    suite.addTest(test_outbox.OutboxManagerTest())
+    suite.addTest(test_worker.all())
+    suite.addTest(test_http.all())
+    suite.addTest(test_dao.all())
+    suite.addTest(test_find.all())
+    suite.addTest(test_tag.all())
+    suite.addTest(test_register.all())
+    suite.addTest(test_outbox.all())
+    # New test suites should be added here...
     return suite
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)

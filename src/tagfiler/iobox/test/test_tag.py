@@ -23,6 +23,13 @@ import logging
 import base
 
 
+def all():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(TagTest())
+    return suite
+
+
 class TagTest(base.OutboxBaseTestCase):
     
     def runTest(self):

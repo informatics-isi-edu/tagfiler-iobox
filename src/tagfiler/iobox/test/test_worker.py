@@ -27,6 +27,14 @@ import time
 logger = logging.getLogger(__name__)
 
 
+def all():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(SingleStageWorkerTest())
+    suite.addTest(MultiStageWorkerTest())
+    return suite
+
+
 class DummyWorker(worker.Worker):
     """A test worker.
     

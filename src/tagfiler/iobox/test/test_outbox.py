@@ -28,6 +28,13 @@ import time
 logger = logging.getLogger(__name__)
 
 
+def all():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(OutboxManagerTest())
+    return suite
+
+
 class OutboxManagerTest(base.OutboxBaseTestCase):
     """Test of the Outbox Manager."""
     
