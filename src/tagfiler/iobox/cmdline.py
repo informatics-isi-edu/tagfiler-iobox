@@ -44,6 +44,7 @@ __LOGLEVEL = {0: logging.ERROR,
               2: logging.INFO,
               3: logging.DEBUG}
 __LOGLEVEL_MAX = 3
+__LOGLEVEL_DEFAULT = 0
 
 def create_temp_outbox_dao():
     """Creates an OutboxDAO using a temporary file.
@@ -80,25 +81,38 @@ def main(args=None):
     parse_args(...) method.
     """
     parser = argparse.ArgumentParser(prog=__PROG, description=__DESC)
-    parser.add_argument('--verbose', '-v', action='count')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-v', '--verbose', action='count', default=__LOGLEVEL_DEFAULT)
+    group.add_argument('-q', '--quiet', action='store_true')
     parser.add_argument('--version', action='version', version=__VER)
-    parser.add_argument('rootdir', nargs='+', type=str, default=sys.stdin, 
+    parser.add_argument('-i', '--inclusion-pattern', help='inclusion pattern')
+    parser.add_argument('-x', '--exclusion-pattern', help='exclusion pattern')
+    parser.add_argument('URL', type=str, help='URL of the Tagfiler service (example: https://host/tagfiler)')
+    parser.add_argument('username', type=str, help='Username for Tagfiler authentication')
+    parser.add_argument('password', type=str, help='Password for Tagfiler authentication')
+    parser.add_argument('rootdir', nargs='+', type=str, 
                         help='root directories of the outbox')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     
     # Turn verbosity into a loglevel setting for the global logger
-    if args.verbose:
-        if args.verbose > __LOGLEVEL_MAX:
-            logging.basicConfig(level=__LOGLEVEL[__LOGLEVEL_MAX])
-        else:
-            logging.basicConfig(level=__LOGLEVEL[args.verbose])
+    if args.quiet:
+        logging.getLogger().addHandler(logging.NullHandler())
+        # Should probably suppress stderr and stdout
+    else:
+        verbosity = args.verbose if args.verbose < __LOGLEVEL_MAX else __LOGLEVEL_MAX
+        logging.basicConfig(level=__LOGLEVEL[verbosity])
     
     # Create the DAO
-    p = {'outbox_name':'temp_outbox', 'tagfiler_url':'https://host:port/tagfiler', 'tagfiler_username':'username', 'tagfiler_password':'password'}
     (outbox_path, outbox_dao) = create_temp_outbox_dao()
     
+    # Temp Outbox arguments
+    outbox_args = {'outbox_name': 'temp_outbox',
+                   'tagfiler_url': args.URL,
+                   'tagfiler_username': args.username,
+                   'tagfiler_password': args.password}
+    
     # Get the Outbox model object
-    outbox_model = models.Outbox(**p)
+    outbox_model = models.Outbox(**outbox_args)
     outbox_model = outbox_dao.add_outbox(outbox_model)
     state_dao = outbox_dao.get_state_dao(outbox_model)
     
