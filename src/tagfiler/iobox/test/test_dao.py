@@ -163,31 +163,73 @@ class TestOutboxDAO(unittest.TestCase):
         assert len(path_rule.get_templates()) == 1 and path_rule.get_templates()[0].get_template() == template_str
         assert len(path_rule.get_rewrites()) == 1 and path_rule.get_rewrites()[0].get_rewrite_pattern() == rewrite_pattern_str
         assert len(path_rule.get_constants()) == 1 and path_rule.get_constants()[0].get_constant_name() == constant_name_str
-    """
-    def testAddLineMatch(self):
+
+    def testAddLineRule(self):
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_line_matches() is not None and len(outbox.get_line_matches()) == 0
-        l1 = LineMatch()
+        assert outbox.get_line_rules() is not None and len(outbox.get_line_rules()) == 0
+        pattern_str = '^/.*/studies/([^/]+)/([^/]+)/'
+        name_str = "assign directory tags"
+        extract_str = "positional"
+        tag1_str = "date"
+        tag2_str = "session"
+        template_str = "some kind of template <1> and <2>"
+        rewrite_pattern_str = ".*"
+        rewrite_template_str = "<hello>"
+        constant_name_str = "test"
+        constant_value_str = "hello"
+        apply_str = "template"
+        
+        l1 = LineRule()
         l1.set_name("test line rule")
         rp = PathRule()
         rp.set_pattern("^/.*studies")
         l1.set_path_rule(rp)
-        lr = LineRule()
-        lr.set_pattern("^,match,([0-9]+).*")
-        lr.set_apply('match')
-        lr.set_extract('positional')
-        lrp = LineRulePrepattern()
-        lrp.set_pattern(".*")
-        lr.set_prepattern(lrp)
-        l1.add_line_rule(lr)
+        for i in range(0, 10):
+            p1 = RERule()
+            p1.set_name(name_str)
+            p1.set_pattern(pattern_str)
+            p1.set_extract(extract_str)
+            p1.set_apply(apply_str)
+            t1 = RERuleTag()
+            t1.set_tag_name(tag1_str)
+            t2 = RERuleTag()
+            t2.set_tag_name(tag2_str)
+            p1.add_tag(t1)
+            p1.add_tag(t2)
+            tmpl = RERuleTemplate()
+            tmpl.set_template(template_str)
+            p1.add_template(tmpl)
+            r1 = RERuleRewrite()
+            r1.set_rewrite_pattern(rewrite_pattern_str)
+            r1.set_rewrite_template(rewrite_template_str)
+            p1.add_rewrite(r1)
+            c1 = RERuleConstant()
+            c1.set_constant_name(constant_name_str)
+            c1.set_constant_value(constant_value_str)
+            p1.add_constant(c1)
+            l1.add_rerule(p1)
         
-        self.dao.add_line_match_to_outbox(outbox, l1)
-        assert len(outbox.get_line_matches()) == 1
-        for l in outbox.get_line_matches():
+        self.dao.add_line_rule_to_outbox(outbox, l1)
+        assert len(outbox.get_line_rules()) == 1
+        for l in outbox.get_line_rules():
             assert l.get_id() is not None
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_line_matches() is not None and len(outbox.get_line_matches()) == 1
-    """
+        assert outbox.get_line_rules() is not None and len(outbox.get_line_rules()) == 1
+        line_rule = outbox.get_line_rules()[0]
+        assert line_rule.get_path_rule() is not None
+        assert len(line_rule.get_rerules()) == 10
+        assert len(line_rule.get_rerules()[0].get_tags()) == 2
+        assert len(line_rule.get_rerules()[0].get_constants()) == 1
+        assert len(line_rule.get_rerules()[0].get_rewrites()) == 1
+        assert len(line_rule.get_rerules()[0].get_templates()) == 1
+        assert line_rule.get_name() == "test line rule"
+        
+        l2 = LineRule()
+        self.dao.add_line_rule_to_outbox(outbox, l2)
+        assert l2.get_id() is not None
+        outbox = self.dao.find_outbox_by_name('test_outbox')
+        assert len(outbox.get_line_rules()) == 2
+
 class TestOutboxStateDAO(unittest.TestCase):
     def setUp(self):
         import tempfile

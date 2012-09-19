@@ -95,7 +95,7 @@ class OutboxDAO(DataDAO):
             outbox.set_inclusion_patterns(self.find_outbox_inclusion_patterns(outbox))
             outbox.set_exclusion_patterns(self.find_outbox_exclusion_patterns(outbox))
             outbox.set_path_rules(self.find_outbox_path_rules(outbox))
-            #outbox.set_line_matches(self.find_outbox_line_matches(outbox))
+            outbox.set_line_rules(self.find_outbox_line_rules(outbox))
         return outbox
 
     def find_outbox_roots(self, outbox):
@@ -277,6 +277,44 @@ class OutboxDAO(DataDAO):
         cursor.execute("INSERT INTO path_rule (rerule_id) VALUES (?)", p)
         cursor.close()
 
+    def add_line_rule(self, line_rule):
+        """Adds a line_rule to the database
+        
+        Keyword arguments:
+        line_rule -- the line rule object
+        
+        """
+        cursor = self.db.cursor()
+        p = [line_rule.get_name()]
+        if line_rule.get_path_rule() is not None:
+            if line_rule.get_path_rule().get_id() is None:
+                self.add_path_rule(line_rule.get_path_rule())
+            p.append(line_rule.get_path_rule().get_id())
+        
+        else:
+            p.append(None)
+        cursor.execute("INSERT INTO line_rule (name, path_rule_id) VALUES (?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        line_rule.set_id(cursor.fetchone()["id"])
+        cursor.close()
+        for r in line_rule.get_rerules():
+            self.add_line_rule_rerule(line_rule, r)
+    
+    def add_line_rule_rerule(self, line_rule, rerule):
+        """Adds a line rule rerule to the database.
+        
+        Keyword arguments:
+        line_rule -- line rule object
+        rerule -- rerule object
+        
+        """
+        if rerule.get_id() is None:
+            self.add_rerule(rerule)
+        cursor = self.db.cursor()
+        p = (line_rule.get_id(), rerule.get_id())
+        cursor.execute("INSERT INTO line_rule_rerule (line_rule_id, rerule_id) VALUES (?, ?)", p)
+        cursor.close()
+
     def add_rerule(self, rerule):
         """Adds a rerule object to the database.
         
@@ -382,8 +420,23 @@ class OutboxDAO(DataDAO):
         outbox.add_path_rule(path_rule)
         cursor.close()
 
+    def add_line_rule_to_outbox(self, outbox, line_rule):
+        """Adds a line rule to the database and appends it to the outbox object.
+        
+        Keyword arguments:
+        outbox -- outbox object
+        line_rule -- line rule object
+        
+        """
+        self.add_line_rule(line_rule)
+        cursor = self.db.cursor()
+        p = (outbox.get_id(),line_rule.get_id())
+        cursor.execute("INSERT INTO outbox_line_rule (outbox_id, line_rule_id) VALUES (?, ?)", p)
+        outbox.add_line_rule(line_rule)
+        cursor.close()
+        
     def find_outbox_path_rules(self, outbox):
-        """Returns all of the path match rules assigned to the outbox.
+        """Returns all of the path rules assigned to the outbox.
         
         Keyword arguments:
         outbox -- outbox configuration object
@@ -399,19 +452,91 @@ class OutboxDAO(DataDAO):
             pr = PathRule(**r)
             # don't join this field in case it is too recursive
             if r["prepattern_id"] is not None:
-                p = (r["prepattern_id"],)
-                cursor = self.db.cursor()
-                cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.pattern, r.extract, r.apply FROM rerule AS r WHERE r.id=?", p)
-                r1 = cursor.fetchone()
-                pr.set_prepattern(RERule(**r1))
-                cursor.close()
-            pr.set_tags(self.find_rerule_tags(pr))
-            pr.set_templates(self.find_rerule_templates(pr))
-            pr.set_constants(self.find_rerule_constants(pr))
-            pr.set_rewrites(self.find_rerule_rewrites(pr))
+                pr.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
+            self._populate_rerule_associations(pr)
             path_rules.append(pr)
         
         return path_rules
+    
+    def find_rerule_by_id(self, rerule_id):
+        """Retrieves a rerule object given its id, returns None if not found.
+        
+        Keyword arguments:
+        rerule_id -- the id of the rerule.
+        
+        """
+        rerule = None
+        cursor = self.db.cursor()
+        p = (rerule_id,)
+        cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.pattern, r.extract, r.apply FROM rerule AS r WHERE r.id=?", p)
+        r = cursor.fetchone()
+        cursor.close()
+        if r is not None:
+            rerule = RERule(**r)
+            if r["prepatter_id"] is not None:
+                rerule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
+        return rerule
+
+    def find_path_rule_by_id(self, path_rule_id):
+        path_rule = None
+        cursor = self.db.cursor()
+        p = (path_rule_id,)
+        cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.pattern, r.extract, r.apply FROM path_rule AS p INNER JOIN rerule AS r ON (p.rerule_id=r.id) WHERE p.rerule_id=?", p)
+        r = cursor.fetchone()
+        cursor.close()
+        if r is not None:
+            path_rule = PathRule(**r)
+            if r["prepattern_id"] is not None:
+                path_rule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
+        return path_rule
+
+    def find_outbox_line_rules(self, outbox):
+        """Returns all of the line rules assigned to the outbox.
+        
+        Keyword arguments:
+        outbox -- outbox configuration object
+        """
+        line_rules = []
+        cursor = self.db.cursor()
+        p = (outbox.get_id(),)
+        cursor.execute("SELECT l.id, l.name, l.path_rule_id FROM outbox_line_rule AS o INNER JOIN line_rule AS l ON (o.line_rule_id=l.id) WHERE o.outbox_id=?", p)
+        results = cursor.fetchall()
+        cursor.close()
+        for r in results:
+            lr = LineRule(**r)
+            # don't join this field in case it is too recursive
+            if r["path_rule_id"] != None:
+                lr.set_path_rule(self.find_path_rule_by_id(r["path_rule_id"]))
+            lr.set_rerules(self.find_line_rule_rerules(lr))
+            line_rules.append(lr)
+        return line_rules
+    
+    def find_line_rule_rerules(self, line_rule):
+        """Returns all of the rerules associated with a line rule.
+        
+        Keyword arguments:
+        line_rule -- line rule object
+        
+        """
+        rerules = []
+        cursor = self.db.cursor()
+        p = (line_rule.get_id(),)
+        cursor.execute("SELECT r.id, r.name, r.prepattern_id, r.extract, r.apply FROM line_rule_rerule AS l INNER JOIN rerule AS r ON (l.rerule_id=r.id) WHERE l.line_rule_id=?", p)
+        results = cursor.fetchall()
+        cursor.close()
+        for r in results:
+            rerule = RERule(**r)
+            if r["prepattern_id"] is not None:
+                rerule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
+            self._populate_rerule_associations(rerule)
+            rerules.append(rerule)
+        return rerules
+
+    def _populate_rerule_associations(self, rerule):
+        rerule.set_tags(self.find_rerule_tags(rerule))
+        rerule.set_templates(self.find_rerule_templates(rerule))
+        rerule.set_constants(self.find_rerule_constants(rerule))
+        rerule.set_rewrites(self.find_rerule_rewrites(rerule))
 
     def find_rerule_tags(self, rerule):
         """Returns all of the tags assigned to a rerule.

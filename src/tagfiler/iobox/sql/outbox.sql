@@ -73,7 +73,8 @@ CREATE TABLE IF NOT EXISTS path_rule(
 
 CREATE TABLE IF NOT EXISTS line_rule(
     id INTEGER NOT NULL PRIMARY KEY,
-    path_rule_id INTEGER REFERENCES path_rule(id)
+    path_rule_id INTEGER REFERENCES path_rule(id),
+    name TEXT
 );
 
 CREATE TABLE IF NOT EXISTS line_rule_rerule(

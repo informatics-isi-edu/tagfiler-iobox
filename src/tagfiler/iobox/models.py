@@ -205,8 +205,17 @@ class PathRule(RERule):
 class LineRule(object):
     def __init__(self, **kwargs):
         self.path_rule = None
+        self.id = kwargs.get("id")
+        self.name = kwargs.get("name")
         self.rerules = []
-        
+    def get_id(self):
+        return self.id
+    def set_id(self, i):
+        self.id = i
+    def get_name(self):
+        return self.name
+    def set_name(self, name):
+        self.name = name
     def get_path_rule(self):
         return self.path_rule
     def set_path_rule(self, path_rule):
