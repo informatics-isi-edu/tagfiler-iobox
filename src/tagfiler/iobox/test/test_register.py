@@ -1,38 +1,36 @@
-'''
-Created on Sep 17, 2012
+# 
+# Copyright 2010 University of Southern California
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#    http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""
+Unit tests for register module.
+"""
 
-@author: smithd
-'''
-import unittest
-import random
-import time
 from tagfiler.iobox.models import File, RegisterTag
-from tagfiler.iobox.dao import OutboxDAO
-from tagfiler.iobox.test.test_dao import create_test_outbox
 from tagfiler.iobox.register import Register
 from tagfiler.iobox import worker
 from tagfiler.util.http import TagfilerClient
+import base
 
-import os
+import unittest
+import random
+import time
 
-class TestRegister(unittest.TestCase):
-    def setUp(self):
-        import tempfile
-        outbox_file = os.path.join(tempfile.gettempdir(), "outbox.db")
-        if os.path.exists(outbox_file):
-            os.remove(outbox_file)
-        self.dao = OutboxDAO(outbox_file)
-        self.outbox = create_test_outbox()
-        self.dao.add_outbox(self.outbox)
-        self.state_dao = self.dao.get_state_dao(self.outbox)
-        
-        
-        
-    def tearDown(self):
-        self.dao.close()
-        self.state_dao.close()
 
-    def testDoWork(self):
+class RegisterTest(base.OutboxBaseTestCase):
+
+    def runTest(self):
         f = File()
         f.set_filepath("/home/smithd/test_register/test_%i" % random.random())
         f.set_size(100)
@@ -52,7 +50,8 @@ class TestRegister(unittest.TestCase):
         register_q.put(r)
         finish_q = worker.WorkQueue()
         
-        register = Register(register_q, finish_q, config=self.outbox.get_tagfiler())
+        register = Register(register_q, finish_q, self.state_dao, 
+                            self.outbox_model.get_tagfiler())
         register.start()
         register_q.join()
         register.terminate()
@@ -61,9 +60,10 @@ class TestRegister(unittest.TestCase):
         assert register_q.qsize() == 0
         assert finish_q.qsize() == 1
         
-        tagfiler_client = TagfilerClient(config=self.outbox.get_tagfiler())
+        tagfiler_client = TagfilerClient(config=self.outbox_model.get_tagfiler())
         result = tagfiler_client.find_subject_by_name(r.get_tag("name")[0].get_tag_value())
         assert result is not None
-        
+
+
 if __name__ == "__main__":
     unittest.main()
