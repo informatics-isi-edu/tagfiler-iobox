@@ -17,12 +17,15 @@
 Unit tests for the worker module.
 """
 
+import tagfiler.iobox.worker as worker
+
 import unittest
 import logging
 import time
-import tagfiler.iobox.worker as worker
+
 
 logger = logging.getLogger(__name__)
+
 
 class DummyWorker(worker.Worker):
     """A test worker.
@@ -54,10 +57,10 @@ class DummyWorker(worker.Worker):
             work_done(result)
 
 
-class WorkerTest(unittest.TestCase):
-    """The Unit Tests for worker module."""
+class SingleStageWorkerTest(unittest.TestCase):
+    """A single stage worker test case."""
 
-    def testSingleStagePipeline(self):
+    def runTest(self):
         """Tests a single stage (i.e., single worker) pipeline."""
         
         # Create task queues for the pipeline.
@@ -85,7 +88,11 @@ class WorkerTest(unittest.TestCase):
         time.sleep(1) #TODO(schuler): hate to do it this way
         self.assertFalse(stage1.is_alive(), "Worker is alive")
         
-    def testThreeStagePipeline(self):
+
+class MultiStageWorkerTest(unittest.TestCase):
+    """A multi-stage worker test case."""
+
+    def runTest(self):
         """Tests a three stage pipeline."""
         
         # Create task queues for the pipeline.
@@ -126,6 +133,5 @@ class WorkerTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    """A standaline test of the three stage pipeline."""
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
