@@ -14,21 +14,26 @@
 # limitations under the License.
 #
 """
-Placeholder for the find module.
+This module implements the 'Find' stage of the Tagfiler Outbox. It works on a 
+queue of Root model objects. Each root directory is walked and file entries 
+are filtered according to inclusion and exclusion patterns. It also gets the 
+stats for each file entrye. The 'Find' stage then fills a queue with File 
+model objects.
 """
 
 import tagfiler.iobox.worker as worker
 from tagfiler.util.files import tree_scan_stats
-from tagfiler.iobox.models import File
+from tagfiler.iobox.models import Root, File
+from tagfiler.iobox.dao import OutboxStateDAO
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Find(worker.Worker):
-    """A worker for performing the find stage of the outbox pipeline."""
+    """The worker thread for the 'Find' stage of the Tagfiler Outbox."""
     
-    def __init__(self, tasks, results, inclusion_patterns=[], exclusion_patterns=[]):
+    def __init__(self, tasks, results, state_dao, inclusion_patterns=[], exclusion_patterns=[]):
         """
         Initializes the Find class.
         
@@ -38,11 +43,14 @@ class Find(worker.Worker):
             inclusion_patterns: optional list of 'InclusionPattern' objects
             exclusion_patterns: optional list of 'ExclusionPattern' objects
         """
-        worker.Worker.__init__(self, tasks, results)
+        super(Find, self).__init__(tasks, results)
+        assert isinstance(state_dao, OutboxStateDAO)
+        self._state_dao = state_dao
         self._inclusion_patterns = inclusion_patterns
         self._exclusion_patterns = exclusion_patterns
         
     def do_work(self, task, work_done):
+        assert isinstance(task, Root)
         root = task # We expect task to be of type models.Root
         path = root.get_filepath()
         logger.debug('Find:do_work: path: %s' % path)
