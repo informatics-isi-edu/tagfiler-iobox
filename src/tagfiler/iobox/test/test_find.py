@@ -17,40 +17,15 @@
 Unit tests for find module.
 """
 
-import tagfiler.iobox.worker as worker
-import tagfiler.iobox.find as find
-import tagfiler.iobox.models as models
-import tagfiler.iobox.test.base as base
+from tagfiler.iobox import worker, find, models
+import base
 
 import unittest
 import logging
-import tempfile
-import shutil
 import time
 
 
 logger = logging.getLogger(__name__)
-
-
-def create_temp_dirtree(numroots, numdirs, numfiles):
-    """Creates a temporary directory and returns a list of root 'dirs'."""
-    rootdirs = []
-    for r in range(numroots):
-        rootdir = tempfile.mkdtemp()
-        logger.debug("create_temp_dirtree: %s" % rootdir)
-        rootdirs.append(rootdir)
-        for i in range(numdirs):
-            currdir = tempfile.mkdtemp(dir=rootdir)
-            for j in range(numfiles):
-                tempfile.mkstemp(dir=currdir)
-                
-    return rootdirs
-
-def remove_temp_dirtree(dirs=[]):
-    """Removes directory trees rooted in 'dirs' list."""
-    for rootdir in dirs:
-        logger.debug("remove_temp_dirtree: %s" % rootdir)
-        shutil.rmtree(rootdir, ignore_errors=True)
 
 
 class FindTest(base.OutboxBaseTestCase):

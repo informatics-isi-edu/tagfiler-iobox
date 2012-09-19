@@ -17,10 +17,8 @@
 Shared utilities for Outbox TestCases.
 """
 
-#from tagfiler.iobox.test.test_find import create_temp_dirtree, remove_temp_dirtree
-from tagfiler.iobox.test.test_dao import create_test_outbox
 from tagfiler.iobox.cmdline import create_temp_outbox_dao, remove_temp_outbox_dao
-from tagfiler.iobox import models, outbox
+from tagfiler.iobox import models
 
 import unittest
 import logging
@@ -30,6 +28,16 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
+
+def create_test_outbox():
+    outbox = models.Outbox()
+    outbox.set_name('test_outbox')
+    tagfiler = models.Tagfiler()
+    tagfiler.set_url('https://jacoby.isi.edu/tagfiler')
+    tagfiler.set_username('smithd')
+    tagfiler.set_password('smithd')
+    outbox.set_tagfiler(tagfiler)
+    return outbox
 
 def create_temp_dirtree(numroots, numdirs, numfiles):
     """Creates a temporary directory and returns a list of root 'dirs'."""
