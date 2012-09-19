@@ -23,6 +23,7 @@ import Queue
 
 logger = logging.getLogger(__name__)
 
+
 class WorkQueue(Queue.Queue):
     """A simple work queue.
     
@@ -53,10 +54,16 @@ class Worker(threading.Thread):
         """Initializes the Worker class.
         
         Arguments:
-        tasks -- a WorkQueue of tasks.
-        results -- a WorkQueue of results.
+            tasks: a WorkQueue of tasks.
+            results: a WorkQueue of results.
         """
-        threading.Thread.__init__(self)
+        super(Worker, self).__init__()
+        assert tasks is not None
+        assert hasattr(tasks, 'get')
+        assert results is not None
+        assert hasattr(results, 'put')
+        assert hasattr(results, 'put_nowait')
+        
         self.setDaemon(True)
         self._terminate = False
         self._tasks = tasks
@@ -64,14 +71,17 @@ class Worker(threading.Thread):
     
     def terminate(self):
         """Flags the worker to terminate cleanly."""
+        assert not self._terminate
         self._terminate = True
         try:
             # Need to put a dummy task on the queue in case the worker is
             # blocking on input.
             self._tasks.put_nowait(Worker.__TERMINATE)
         except Queue.Full:
-            # The thread should be okay if the queue is full that should
-            # mean that the thread will not be blocking on the queue
+            # The thread should be okay if the queue is full. That should
+            # mean that the thread will not be blocking on the queue, and
+            # the thread will still terminate without the __TERMINATE marker 
+            # because it is really looking for the _terminate flag.
             pass
     
     def do_work(self, task, work_done):
@@ -79,10 +89,19 @@ class Worker(threading.Thread):
         
         This is the only method that should be overridden by subclasses. When 
         the task is done call the work_done function, giving it 1 argument, the
-        result object to be passed back from this worker.        
+        result object to be passed back from this worker.
+        
+        Note that is the Worker subclass performs a long running operation 
+        during the call to do_work, it should check on the terminate flag 
+        frequently. If terminate is True, the do_work should immediately clean 
+        up and terminate.
         """
         pass
     
+    # Might want to turn do_work into a generator function and instead of using
+    # this _work_done callback, the do_work just yields results whenever.
+    # Also, _work_done is misleading because the task may not be 'done' instead
+    # it is really just returning (or yielding) the next result.
     def _work_done(self, result):
         """
         Internal implementation of the work_done callback passed to the
