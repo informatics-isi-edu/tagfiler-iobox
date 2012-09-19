@@ -14,22 +14,31 @@
 # limitations under the License.
 #
 """
-Placeholder for the tag module.
+Implements the tagging stage of the Outbox pipeline.
 """
 
 import logging
-import worker
+import worker, dao, models
+
 
 logger = logging.getLogger(__name__)
 
+
 class Tag(worker.Worker):
-    """A worker for performing the tag stage of the outbox pipeline."""
+    """A worker for performing the tagging stage of the outbox pipeline."""
     
-    def __init__(self, tasks, results, rules):
+    def __init__(self, tasks, results, state_dao, rules):
         super(Tag, self).__init__(tasks, results)
-        self.rules = rules
+        
+        assert isinstance(state_dao, dao.OutboxStateDAO)
+        
+        self._state_dao = state_dao
+        self._rules = rules
 
     def do_work(self, task, work_done):
-        logger.debug('Task:    %s' % task)
-        work_done(task)
-        return
+        assert isinstance(task, models.File)
+        fileobj = task
+        logger.debug('do_work: File: %s' % fileobj)
+        reg_file = models.RegisterFile()
+        reg_file.set_file(fileobj)
+        work_done(reg_file)
