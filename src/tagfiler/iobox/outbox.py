@@ -63,6 +63,7 @@ class Outbox():
                             self._model.get_path_rules()) #TODO(schuler): TBD to verify whether this is the correct parameter for Tag init
         self._register = register.Register(
                                     self._register_q, worker.WorkQueue(),
+                                    self._state_dao,
                                     self._model.get_tagfiler())
         
         

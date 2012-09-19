@@ -14,43 +14,51 @@
 # limitations under the License.
 #
 """
-Placeholder for the register module.
+Implements the registration stage of the Outbox.
 """
 
-import logging
-import worker
+import worker, dao, models
 from tagfiler.util.http import TagfilerClient
-from tagfiler.iobox.dao import OutboxDAO
-import os
+
+import logging
+
 
 logger = logging.getLogger(__name__)
 
+
 class Register(worker.Worker):
+    """The registration pipeline worker."""
     
-    def __init__(self, tasks, results, config):
-        """Constructor
+    def __init__(self, tasks, results, state_dao, tagfiler):
+        """Constructor.
         
-        Keyword arguments:
-        tasks -- ?
-        results -- ?
-        dao -- the outbox state dao that this task is associated with
-        config -- the tagfiler configuration to use to communicate with the service
+        Arguments:
+            tasks: A queue of models.RegisterFile instances.
+            results: An empty queue.
+            state_dao: the OutboxStateDAO instance.
+            tagfiler: the models.Tagfiler instance.
         """
         super(Register, self).__init__(tasks, results)
-        self._config = config
-        self._client = TagfilerClient(config)
+        
+        assert isinstance(state_dao, dao.OutboxStateDAO)
+        assert isinstance(tagfiler, models.Tagfiler)
+        
+        self._state_dao = state_dao
+        self._client = TagfilerClient(tagfiler)
 
     def do_work(self, task, work_done):
         """Performs register work on a task.
         
-        Keyword arguments:
-        task -- register file object to add to tagfiler
-        work_done -- callback to run on the registered file.
+        Arguments:
+            task: register file object to add to tagfiler
+            work_done: callback to run on the registered file.
         """
-        logger.debug('Task:        %s' % task)
+        assert isinstance(task, models.RegisterFile)
+        reg_file = task
+        logger.debug('Register:do_work: %s' % reg_file)
         self._client.add_subject(task)
         
         # TODO: cleanup register_file entry in the database.  SQLite won't allow an object constructed in one
         # thread to be used in another -- do I have to create a DAO in each do_work invocation?
         
-        work_done(task)
+        work_done(reg_file) #TODO(schuler): or emit None, since register is the end of the pipeline
