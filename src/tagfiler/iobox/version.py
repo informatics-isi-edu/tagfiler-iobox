@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # 
 # Copyright 2010 University of Southern California
 # 
@@ -14,13 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """
-Main script to invoke the Tagfiler Outbox.
+Versioning information for the Tagfiler IOBox Package.
 """
 
-import sys
-import tagfiler.iobox.cmdline as cmdline
-
-if __name__ == "__main__":
-    sys.exit(cmdline.main())
+VERSION_MAJOR   = 0
+VERSION_MINOR   = 1
+VERSION_STRING  = "%(prog)s 0.1 beta"

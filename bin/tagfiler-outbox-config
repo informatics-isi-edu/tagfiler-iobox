@@ -16,11 +16,11 @@
 #
 
 """
-Main script to invoke the Tagfiler Outbox.
+Main script to invoke the Tagfiler Outbox configuration utility.
 """
 
 import sys
-import tagfiler.iobox.cmdline as cmdline
+import tagfiler.iobox.config as config
 
 if __name__ == "__main__":
-    sys.exit(cmdline.main())
+    sys.exit(config.main())
