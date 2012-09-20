@@ -85,8 +85,8 @@ def main(args=None):
     group.add_argument('-v', '--verbose', action='count', default=__LOGLEVEL_DEFAULT)
     group.add_argument('-q', '--quiet', action='store_true')
     parser.add_argument('--version', action='version', version=__VER)
-    parser.add_argument('-i', '--inclusion-pattern', help='inclusion pattern')
-    parser.add_argument('-x', '--exclusion-pattern', help='exclusion pattern')
+    parser.add_argument('--exclude', type=str, help='exclusion pattern')
+    parser.add_argument('--include', type=str, help='inclusion pattern')
     parser.add_argument('URL', type=str, help='URL of the Tagfiler service (example: https://host/tagfiler)')
     parser.add_argument('username', type=str, help='Username for Tagfiler authentication')
     parser.add_argument('password', type=str, help='Password for Tagfiler authentication')
@@ -101,6 +101,7 @@ def main(args=None):
     else:
         verbosity = args.verbose if args.verbose < __LOGLEVEL_MAX else __LOGLEVEL_MAX
         logging.basicConfig(level=__LOGLEVEL[verbosity])
+        logger.debug(args)
     
     # Create the DAO
     (outbox_path, outbox_dao) = create_temp_outbox_dao()
@@ -115,6 +116,15 @@ def main(args=None):
     outbox_model = models.Outbox(**outbox_args)
     outbox_model = outbox_dao.add_outbox(outbox_model)
     state_dao = outbox_dao.get_state_dao(outbox_model)
+    
+    # Add include/exclusion patterns
+    if args.exclude:
+        expat = models.ExclusionPattern(pattern=args.exclude)
+        outbox_model.add_exclusion_pattern(expat)
+        
+    if args.include:
+        inpat = models.InclusionPattern(pattern=args.include)
+        outbox_model.add_inclusion_pattern(inpat)
     
     # Add the roots from the command-line
     for rootdir in args.rootdir:
