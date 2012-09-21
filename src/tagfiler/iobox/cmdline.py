@@ -23,7 +23,7 @@ import tempfile
 import argparse
 
 import dao, models, outbox, version
-
+import config # TODO: refactor this out, no crossrefs
 
 logger = logging.getLogger(__name__)
 
@@ -79,17 +79,49 @@ def main(args=None):
     parse_args(...) method.
     """
     parser = argparse.ArgumentParser(prog=__PROG, description=__DESC)
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-v', '--verbose', action='count', default=__LOGLEVEL_DEFAULT)
-    group.add_argument('-q', '--quiet', action='store_true')
+
+    # General options
     parser.add_argument('--version', action='version', version=__VER)
-    parser.add_argument('--exclude', type=str, help='exclusion pattern')
-    parser.add_argument('--include', type=str, help='inclusion pattern')
-    parser.add_argument('URL', type=str, help='URL of the Tagfiler service (example: https://host/tagfiler)')
-    parser.add_argument('username', type=str, help='Username for Tagfiler authentication')
-    parser.add_argument('password', type=str, help='Password for Tagfiler authentication')
-    parser.add_argument('rootdir', nargs='+', type=str, 
-                        help='root directories of the outbox')
+    parser.add_argument('-p', '--print', dest='dump', action='store_true', 
+                        help='print the configuration values')
+    parser.add_argument('-n', '--name', type=str, default='default',
+                        help='name of the outbox to configure')
+    # Use home directory as default location for outbox.conf
+    default_config_path = os.path.join(os.path.expanduser('~'), 
+                                       '.tagfiler', 'outbox.conf')
+    parser.add_argument('-f', '--filename', type=str, 
+                        default=default_config_path,
+                        help=('configuration filename (default: %s)' % 
+                              default_config_path))
+    
+    # Verbose | Quite option group
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-v', '--verbose', action='count', 
+                       default=__LOGLEVEL_DEFAULT, help='verbose output')
+    group.add_argument('-q', '--quiet', action='store_true', 
+                       help='suppress output')
+    
+    # Inclusion/Exclusion option group
+    group = parser.add_argument_group(title='File filters')
+    group.add_argument('--include', type=str, nargs='+',
+                       help='regular expression for includes pattern')
+    group.add_argument('--exclude', type=str, nargs='+',
+                       help='regular expression for excludes pattern')
+    
+    # Tagfiler option group
+    group = parser.add_argument_group(title='Tagfiler options')
+    group.add_argument('--url', dest='url', metavar='URL', 
+                       type=str, help='URL used to connect to Tagfiler')
+    group.add_argument('--username', dest='username', metavar='USERNAME', 
+                       type=str, help='username used when connecting to Tagfiler')
+    group.add_argument('--password', dest='password', metavar='PASSWORD', 
+                       type=str, help='password used when connecting to Tagfiler')
+    
+    # Roots option group
+    group = parser.add_argument_group(title='Root directory options')
+    group.add_argument('--rootdir', metavar='DIRECTORY', 
+                       type=str, nargs='+',
+                       help='add root directories to the base configuration')
     args = parser.parse_args(args)
     
     # Turn verbosity into a loglevel setting for the global logger
@@ -101,18 +133,10 @@ def main(args=None):
         logging.basicConfig(level=__LOGLEVEL[verbosity])
         logger.debug(args)
     
-    # Create the DAO
-    (outbox_path, outbox_dao) = create_temp_outbox_dao()
-    
-    # Temp Outbox arguments
-    outbox_args = {'outbox_name': 'temp_outbox',
-                   'tagfiler_url': args.URL,
-                   'tagfiler_username': args.username,
-                   'tagfiler_password': args.password}
-    
     # Get the Outbox model object
-    outbox_model = models.Outbox(**outbox_args)
-    outbox_model = outbox_dao.add_outbox(outbox_model)
+    (outbox_dao, outbox_model) = config.load_or_create_outbox(
+                                                    args.name, 
+                                                    args.filename)
     state_dao = outbox_dao.get_state_dao(outbox_model)
     
     # Add include/exclusion patterns
@@ -128,13 +152,26 @@ def main(args=None):
     for rootdir in args.rootdir:
         root = models.Root()
         root.set_filepath(rootdir)
-        outbox_dao.add_root_to_outbox(outbox_model, root)
+        outbox_model.add_root(root) # temporarily add root
+        
+    # Set tagfiler settings
+    if args.url or args.username or args.password:
+        tagfiler = outbox_model.get_tagfiler()
+        if args.url:
+            tagfiler.set_url(args.url)
+        if args.username:
+            tagfiler.set_username(args.username)
+        if args.password:
+            tagfiler.set_password(args.password)
+    
+    # Dump the outbox to STDOUT
+    if args.dump:
+        config.dump_outbox(outbox_model)
     
     outbox_manager = outbox.Outbox(outbox_model, state_dao)
     outbox_manager.start()
     outbox_manager.join()
     outbox_manager.terminate()
     
-    # TODO: should move this to a shutdown() function
-    remove_temp_outbox_dao(outbox_path, outbox_dao)
+    outbox_dao.close()
     return __EXIT_SUCCESS
