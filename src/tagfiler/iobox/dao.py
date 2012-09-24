@@ -201,6 +201,7 @@ class OutboxDAO(DataDAO):
         cursor.execute("INSERT INTO outbox (name, tagfiler_id) VALUES (?, ?)", p)
         cursor.execute("SELECT last_insert_rowid() AS id")
         outbox.set_id(cursor.fetchone()["id"])
+        self.db.commit()
         cursor.close()
         return outbox
 
@@ -220,6 +221,7 @@ class OutboxDAO(DataDAO):
             cursor.execute("INSERT INTO root (outbox_id, filepath) VALUES (?, ?)", p)
             cursor.execute("SELECT last_insert_rowid() as id")
             root.set_id(cursor.fetchone()["id"])
+            self.db.commit()
         else:
             root.set_id(r["id"])
         outbox.add_root(root)
