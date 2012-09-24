@@ -149,10 +149,11 @@ def main(args=None):
         outbox_model.add_inclusion_pattern(inpat)
     
     # Add the roots from the command-line
-    for rootdir in args.rootdir:
-        root = models.Root()
-        root.set_filepath(rootdir)
-        outbox_model.add_root(root) # temporarily add root
+    if args.rootdir:
+        for rootdir in args.rootdir:
+            root = models.Root()
+            root.set_filepath(rootdir)
+            outbox_model.add_root(root) # temporarily add root
         
     # Set tagfiler settings
     if args.url or args.username or args.password:
