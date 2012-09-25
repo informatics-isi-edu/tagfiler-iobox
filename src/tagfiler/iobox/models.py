@@ -50,6 +50,8 @@ class Outbox(object):
         self.exclusion_patterns = exclusion_patterns
     def add_exclusion_pattern(self, exclusion_pattern):
         self.exclusion_patterns.append(exclusion_pattern)
+    def get_all_rules(self):
+        return self.path_rules.extend(self.line_rules)
     def get_path_rules(self):
         return self.path_rules
     def set_path_rules(self, path_rules):

@@ -59,4 +59,5 @@ class Find(worker.Worker):
                          (rfpath, size, mtime, user, group))
             f = File(filepath=rfpath, size=size, mtime=mtime, 
                      user=user, group=group, must_tag=True)
+            #self._state_dao.add_file(f) #TODO: fix database locking issue
             work_done(f)

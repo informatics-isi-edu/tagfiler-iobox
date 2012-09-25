@@ -19,7 +19,7 @@ Implements the tagging stage of the Outbox pipeline.
 
 import logging
 import worker, dao, models
-
+from tagfiler.util import rules
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +27,27 @@ logger = logging.getLogger(__name__)
 class Tag(worker.Worker):
     """A worker for performing the tagging stage of the outbox pipeline."""
     
-    def __init__(self, tasks, results, state_dao, rules, rules_director):
+    def __init__(self, tasks, results, state_dao, all_rules, tag_director):
         super(Tag, self).__init__(tasks, results)
         
         assert isinstance(state_dao, dao.OutboxStateDAO)
-        
+        assert isinstance(tag_director, rules.TagDirector)
         self._state_dao = state_dao
-        self._rules = rules
-        self._rules_director = rules_director
+        self._rules = all_rules or []
+        self._tag_director = tag_director
 
     def do_work(self, task, work_done):
         assert isinstance(task, models.File)
         fileobj = task
         logger.debug('do_work: File: %s' % fileobj)
-        reg_file = self._state_dao.register_file(fileobj)
-        self._rules_director.tag_registered_file(self._rules, reg_file)
-        # TODO: fix multi-threading in SQLite
-        for tag in reg_file.get_tags():
-            self._state_dao.add_registered_file_tag(reg_file, tag)
+        #reg_file = self._state_dao.register_file(fileobj) # TODO: fix database locking
+        # remove these two lines when fixed
+        reg_file = models.RegisterFile()
+        reg_file.set_file(fileobj) 
+
+        self._tag_director.tag_registered_file(self._rules, reg_file)
+        
+        # TODO: fix database locking
+        #for tag in reg_file.get_tags():
+        #    self._state_dao.add_registered_file_tag(reg_file, tag)
         work_done(reg_file)

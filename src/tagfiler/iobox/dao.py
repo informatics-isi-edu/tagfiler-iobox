@@ -8,7 +8,7 @@ import logging
 import os
 import time
 from tagfiler import iobox
-from tagfiler.iobox.models import *
+import models
 
 from logging import INFO
 logger = logging.getLogger(__name__)
@@ -71,9 +71,9 @@ class OutboxDAO(DataDAO):
         """Returns the DAO for an outbox's state.
         
         Keyword arguments:
-        outbox -- outbox catalog object
+        outbox -- models.Outbox object
         """
-        
+        assert isinstance(outbox, models.Outbox)
         outbox_state_filepath = os.path.join(os.path.dirname(self.db_filepath), "outbox_%i.db" % outbox.get_id())
         return OutboxStateDAO(outbox, outbox_state_filepath)
 
@@ -91,7 +91,7 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            outbox = Outbox(**r)
+            outbox = models.Outbox(**r)
             outbox.set_roots(self.find_outbox_roots(outbox))
             outbox.set_inclusion_patterns(self.find_outbox_inclusion_patterns(outbox))
             outbox.set_exclusion_patterns(self.find_outbox_exclusion_patterns(outbox))
@@ -103,15 +103,16 @@ class OutboxDAO(DataDAO):
         """Retrieves the root search directories assigned to this outbox.
         
         Keyword arguments:
-        outbox -- outbox catalog object
+        outbox -- models.Outbox object
         
         """
+        assert isinstance(outbox, models.Outbox)
         roots = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
         cursor.execute("SELECT id, filepath, outbox_id FROM root WHERE outbox_id=?", p)
         for r in cursor.fetchall():
-            roots.append(Root(**r))
+            roots.append(models.Root(**r))
         cursor.close()
         return roots
 
@@ -119,15 +120,16 @@ class OutboxDAO(DataDAO):
         """Retrieves the exclusion patterns assigned to this outbox.
         
         Keyword arguments:
-        outbox -- outbox catalog object
+        outbox -- models.Outbox object
         
         """
+        assert isinstance(outbox, models.Outbox)
         exclusion = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
         cursor.execute("SELECT id, outbox_id, pattern FROM exclusion_pattern WHERE outbox_id=?", p)
         for r in cursor.fetchall():
-            exclusion.append(ExclusionPattern(**r))
+            exclusion.append(models.ExclusionPattern(**r))
         cursor.close()
         return exclusion
 
@@ -135,15 +137,16 @@ class OutboxDAO(DataDAO):
         """Retrieves the inclusion patterns assigned to this outbox.
         
         Keyword arguments:
-        outbox -- outbox catalog object
+        outbox -- models.Outbox object
         
         """
+        assert isinstance(outbox, models.Outbox)
         inclusion = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
         cursor.execute("SELECT id, outbox_id, pattern FROM inclusion_pattern WHERE outbox_id=?", p)
         for r in cursor.fetchall():
-            inclusion.append(InclusionPattern(**r))
+            inclusion.append(models.InclusionPattern(**r))
         cursor.close()
         return inclusion
     
@@ -162,7 +165,7 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            tagfiler = Tagfiler(r)
+            tagfiler = models.Tagfiler(r)
         return tagfiler
     
     def add_tagfiler(self, tagfiler):
@@ -170,9 +173,10 @@ class OutboxDAO(DataDAO):
         
         Keyword arguments:
         
-        tagfiler -- tagfiler configuration object
+        tagfiler -- models.Tagfiler object
         
         """
+        assert isinstance(tagfiler, models.Tagfiler)
         cursor = self.db.cursor()
         p = (tagfiler.get_url(), tagfiler.get_username(), tagfiler.get_password())
         cursor.execute("INSERT INTO tagfiler (url, username, password) VALUES (?, ?, ?)", p)
@@ -185,9 +189,10 @@ class OutboxDAO(DataDAO):
         """Adds a new outbox configuration to the database.
         
         Keyword arguments:
-        outbox -- outbox configuration object
+        outbox -- models.Outbox object
         
         """
+        assert isinstance(outbox, models.Outbox)
         cursor = self.db.cursor()
         
         # ensure tagfiler exists in the DB first
@@ -211,10 +216,13 @@ class OutboxDAO(DataDAO):
         """Adds a new root to the outbox in the database and appends it to the local object.
         
         Keyword arguments:
-        outbox -- outbox configuration object
-        root -- root configuration object
+        outbox -- models.Outbox object
+        root -- models.Root object
         
         """
+        assert isinstance(outbox, models.Outbox)
+        assert isinstance(root, models.Root)
+
         cursor = self.db.cursor()
         p = (outbox.get_id(), root.get_filepath())
         cursor.execute("SELECT id FROM root WHERE outbox_id=? AND filepath=?", p)
@@ -234,10 +242,13 @@ class OutboxDAO(DataDAO):
         """Adds a new inclusion pattern to the outbox in the database and appends it to the local object.
         
         Keyword arguments:
-        outbox -- outbox configuration object
-        inclusion_pattern -- inclusion pattern object
+        outbox -- models.Outbox object
+        inclusion_pattern -- models.InclusionPattern object
         
         """
+        assert isinstance(outbox, models.Outbox)
+        assert isinstance(inclusion_pattern, models.InclusionPattern)
+
         cursor = self.db.cursor()
         p = (outbox.get_id(), inclusion_pattern.get_pattern())
         cursor.execute("SELECT id FROM inclusion_pattern WHERE outbox_id=? AND pattern=?", p)
@@ -256,10 +267,13 @@ class OutboxDAO(DataDAO):
         """Adds a new exclusion pattern to the outbox in the database and appends it to the local object.
         
         Keyword arguments:
-        outbox -- outbox configuration object
-        exclusion_pattern -- exclusion pattern object
+        outbox -- models.Outbox object
+        exclusion_pattern -- models.ExclusionPattern object
         
         """
+        assert isinstance(outbox, models.Outbox)
+        assert isinstance(exclusion_pattern, models.ExclusionPattern)
+
         cursor = self.db.cursor()
         p = (outbox.get_id(), exclusion_pattern.get_pattern())
         cursor.execute("SELECT id FROM exclusion_pattern WHERE outbox_id=? AND pattern=?", p)
@@ -278,8 +292,10 @@ class OutboxDAO(DataDAO):
         """Adds a path_rule to the database.
         
         keyword arguments:
-        path_rule -- path rule object
+        path_rule -- models.PathRule object
         """
+        assert isinstance(path_rule, models.PathRule)
+
         self.add_rerule(path_rule)
         cursor = self.db.cursor()
         p = (path_rule.get_id(),)
@@ -291,9 +307,11 @@ class OutboxDAO(DataDAO):
         """Adds a line_rule to the database
         
         Keyword arguments:
-        line_rule -- the line rule object
+        line_rule -- models.LineRule object
         
         """
+        assert isinstance(line_rule, models.LineRule)
+
         cursor = self.db.cursor()
         p = [line_rule.get_name()]
         if line_rule.get_path_rule() is not None:
@@ -315,10 +333,13 @@ class OutboxDAO(DataDAO):
         """Adds a line rule rerule to the database.
         
         Keyword arguments:
-        line_rule -- line rule object
-        rerule -- rerule object
+        line_rule -- models.LineRule object
+        rerule -- models.RERule object
         
         """
+        assert isinstance(line_rule, models.LineRule)
+        assert isinstance(rerule, models.RERule)
+
         if rerule.get_id() is None:
             self.add_rerule(rerule)
         cursor = self.db.cursor()
@@ -331,8 +352,10 @@ class OutboxDAO(DataDAO):
         """Adds a rerule object to the database.
         
         Keyword arguments:
-        rerule -- rerule object
+        rerule -- models.RERule object
         """
+        assert isinstance(rerule, models.RERule)
+
         cursor = self.db.cursor()
         if rerule.get_prepattern() is not None:
             if rerule.get_prepattern().get_id() is None:
@@ -362,9 +385,12 @@ class OutboxDAO(DataDAO):
         """Adds a rerule constant to the database.
         
         Keyword arguments:
-        rerule -- rerule object
-        constant -- constant object
+        rerule -- models.RERule object
+        constant -- models.RERuleConstant object
         """
+        assert isinstance(rerule, models.RERule)
+        assert isinstance(constant, models.RERuleConstant)
+
         p = [rerule.get_id(), constant.get_constant_name()]
         cursor = self.db.cursor()
         cursor.execute("SELECT id FROM rerule_constant WHERE rerule_id=? AND constant_name=?", p)
@@ -383,9 +409,12 @@ class OutboxDAO(DataDAO):
         """Adds a rerule tag to the database.
         
         keyword arguments:
-        rerule -- rerule object
-        tag -- rerule tag object
+        rerule -- models.RERule object
+        tag -- models.RERuleTag object
         """
+        assert isinstance(rerule, models.RERule)
+        assert isinstance(tag, models.RERuleTag)
+
         p = (rerule.get_id(), tag.get_tag_name())
         cursor = self.db.cursor()
         cursor.execute("INSERT INTO rerule_tag (rerule_id, tag_name) VALUES (?, ?)", p)
@@ -398,9 +427,12 @@ class OutboxDAO(DataDAO):
         """Adds a rerule template to the database.
         
         Keyword arguments:
-        rerule -- rerule object
-        template -- template object
+        rerule -- models.RERule object
+        template -- models.RERuleTemplate object
         """
+        assert isinstance(rerule, models.RERule)
+        assert isinstance(template, models.RERuleTemplate)
+
         p = (rerule.get_id(), template.get_template())
         cursor = self.db.cursor()
         cursor.execute("INSERT INTO rerule_template (rerule_id, template) VALUES (?, ?)", p)
@@ -413,9 +445,12 @@ class OutboxDAO(DataDAO):
         """Adds a rerule rewrite to the database.
         
         Keyword arguments:
-        rerule -- rerule object
-        rewrite -- rewrite object
+        rerule -- models.RERule object
+        rewrite -- models.RERuleRewrite object
         """
+        assert isinstance(rerule, models.RERule)
+        assert isinstance(rewrite, models.RERuleRewrite)
+
         p = (rerule.get_id(), rewrite.get_rewrite_pattern(), rewrite.get_rewrite_template())
         cursor = self.db.cursor()
         cursor.execute("INSERT INTO rerule_rewrite (rerule_id, rewrite_pattern, rewrite_template) VALUES (?, ?, ?)", p)
@@ -428,9 +463,12 @@ class OutboxDAO(DataDAO):
         """Adds a path rule to the database and appends it to the outbox object.
         
         Keyword arguments:
-        outbox -- outbox object
-        path_rule -- path_rule object
+        outbox -- models.Outbox object
+        path_rule -- models.PathRule object
         """
+        assert isinstance(outbox, models.Outbox)
+        assert isinstance(path_rule, models.PathRule)
+
         self.add_path_rule(path_rule)
         cursor = self.db.cursor()
         p = (outbox.get_id(), path_rule.get_id())
@@ -443,10 +481,13 @@ class OutboxDAO(DataDAO):
         """Adds a line rule to the database and appends it to the outbox object.
         
         Keyword arguments:
-        outbox -- outbox object
-        line_rule -- line rule object
+        outbox -- models.Outbox object
+        line_rule -- moddels.LineRule object
         
         """
+        assert isinstance(outbox, models.Outbox)
+        assert isinstance(line_rule, models.LineRule)
+
         self.add_line_rule(line_rule)
         cursor = self.db.cursor()
         p = (outbox.get_id(),line_rule.get_id())
@@ -459,9 +500,11 @@ class OutboxDAO(DataDAO):
         """Returns all of the path rules assigned to the outbox.
         
         Keyword arguments:
-        outbox -- outbox configuration object
+        outbox -- models.Outbox object
         
         """
+        assert isinstance(outbox, models.Outbox)
+
         path_rules = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
@@ -469,7 +512,7 @@ class OutboxDAO(DataDAO):
         result = cursor.fetchall()
         cursor.close()
         for r in result:
-            pr = PathRule(**r)
+            pr = models.PathRule(**r)
             # don't join this field in case it is too recursive
             if r["prepattern_id"] is not None:
                 pr.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
@@ -492,7 +535,7 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            rerule = RERule(**r)
+            rerule = models.RERule(**r)
             if r["prepatter_id"] is not None:
                 rerule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
         return rerule
@@ -505,7 +548,7 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            path_rule = PathRule(**r)
+            path_rule = models.PathRule(**r)
             if r["prepattern_id"] is not None:
                 path_rule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
         return path_rule
@@ -514,8 +557,10 @@ class OutboxDAO(DataDAO):
         """Returns all of the line rules assigned to the outbox.
         
         Keyword arguments:
-        outbox -- outbox configuration object
+        outbox -- models.Outbox object
         """
+        assert isinstance(outbox, models.Outbox)
+
         line_rules = []
         cursor = self.db.cursor()
         p = (outbox.get_id(),)
@@ -523,7 +568,7 @@ class OutboxDAO(DataDAO):
         results = cursor.fetchall()
         cursor.close()
         for r in results:
-            lr = LineRule(**r)
+            lr = models.LineRule(**r)
             # don't join this field in case it is too recursive
             if r["path_rule_id"] != None:
                 lr.set_path_rule(self.find_path_rule_by_id(r["path_rule_id"]))
@@ -535,9 +580,11 @@ class OutboxDAO(DataDAO):
         """Returns all of the rerules associated with a line rule.
         
         Keyword arguments:
-        line_rule -- line rule object
+        line_rule -- models.LineRule object
         
         """
+        assert isinstance(line_rule, models.LineRule)
+
         rerules = []
         cursor = self.db.cursor()
         p = (line_rule.get_id(),)
@@ -545,7 +592,7 @@ class OutboxDAO(DataDAO):
         results = cursor.fetchall()
         cursor.close()
         for r in results:
-            rerule = RERule(**r)
+            rerule = models.RERule(**r)
             if r["prepattern_id"] is not None:
                 rerule.set_prepattern(self.find_rerule_by_id(r["prepattern_id"]))
             self._populate_rerule_associations(rerule)
@@ -562,15 +609,17 @@ class OutboxDAO(DataDAO):
         """Returns all of the tags assigned to a rerule.
         
         Keyword arguments:
-        rerule -- rerule object
+        rerule -- models.RERule object
         
         """
+        assert isinstance(rerule, models.RERule)
+
         tags = []
         cursor = self.db.cursor()
         p = (rerule.get_id(),)
         cursor.execute("SELECT id, rerule_id, tag_name FROM rerule_tag WHERE rerule_id = ?", p)
         for r in cursor.fetchall():
-            tags.append(RERuleTag(**r))
+            tags.append(models.RERuleTag(**r))
         cursor.close()
         return tags
 
@@ -578,15 +627,17 @@ class OutboxDAO(DataDAO):
         """Returns all of the templates assigned to a rerule.
         
         Keyword arguments:
-        rerule - rerule object
+        rerule - models.RERule object
         
         """
+        assert isinstance(rerule, models.RERule)
+
         templates = []
         cursor = self.db.cursor()
         p = (rerule.get_id(),)
         cursor.execute("SELECT id, rerule_id, template FROM rerule_template WHERE rerule_id=?", p)
         for r in cursor.fetchall():
-            templates.append(RERuleTemplate(**r))
+            templates.append(models.RERuleTemplate(**r))
         cursor.close()
         return templates
 
@@ -594,15 +645,16 @@ class OutboxDAO(DataDAO):
         """Returns all of the constants assigned to a rerule
         
         Keyword arguments:
-        rerule -- rerule object
+        rerule -- models.RERule object
         
         """
+        assert isinstance(rerule, models.RERule)
         constants = []
         cursor = self.db.cursor()
         p = (rerule.get_id(),)
         cursor.execute("SELECT id, rerule_id, constant_name, constant_value FROM rerule_constant WHERE rerule_id=?", p)
         for r in cursor.fetchall():
-            constants.append(RERuleConstant(**r))
+            constants.append(models.RERuleConstant(**r))
         cursor.close()
         return constants
     
@@ -610,15 +662,16 @@ class OutboxDAO(DataDAO):
         """Returns all rewrites assigned to a rerule
         
         Keyword arguments:
-        rerule -- rerule object
+        rerule -- models.RERule object
         
         """
+        assert isinstance(rerule, models.RERule)
         rewrites = []
         cursor = self.db.cursor()
         p = (rerule.get_id(),)
         cursor.execute("SELECT id, rerule_id, rewrite_pattern, rewrite_template FROM rerule_rewrite WHERE rerule_id=?", p)
         for r in cursor.fetchall():
-            rewrites.append(RERuleRewrite(**r))
+            rewrites.append(models.RERuleRewrite(**r))
         cursor.close()
         return rewrites
     
@@ -641,7 +694,7 @@ class OutboxStateDAO(DataDAO):
         state_name: state name
         
         """
-        state = ScanState()
+        state = models.ScanState()
         state.set_state(state_name)
         cursor = self.db.cursor()
         p = (state_name,)
@@ -667,7 +720,7 @@ class OutboxStateDAO(DataDAO):
         results = cursor.fetchall()
         cursor.close()
         for r in results:
-            scans.append(Scan(**r))
+            scans.append(models.Scan(**r))
         return scans
     
     def start_file_scan(self):
@@ -684,7 +737,7 @@ class OutboxStateDAO(DataDAO):
         cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) WHERE s.id=?", p)
         r = cursor.fetchone()
         cursor.close()
-        return Scan(**r)
+        return models.Scan(**r)
 
     def find_last_scan(self):
         """Retrieves the last scan that was started.
@@ -696,7 +749,7 @@ class OutboxStateDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            scan = Scan(**r)
+            scan = models.Scan(**r)
             scan.set_files(self.find_files_in_scan(scan))
         return scan
     
@@ -714,16 +767,18 @@ class OutboxStateDAO(DataDAO):
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
-            f = File(**r)
+            f = models.File(**r)
         return f
     
     def add_file(self, f):
         """Adds a new file object to the database.
         
         Keyword arguments:
-        f -- file object
+        f -- models.File object
         
         """
+        assert isinstance(f, models.File)
+
         cursor = self.db.cursor()
         p = (f.get_filepath(),)
         cursor.execute("SELECT id FROM file WHERE filepath=?", p)
@@ -743,9 +798,11 @@ class OutboxStateDAO(DataDAO):
         """Saves information from an existing file object to the database.
         
         Keyword arguments:
-        f -- file object
+        f -- models.File object
         
         """
+        assert isinstance(f, models.File)
+
         cursor = self.db.cursor()
         p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag(), f.get_id())
         cursor.execute("UPDATE file SET filepath=?, mtime=?, size=?, checksum=?, must_tag=? WHERE id=?", p)
@@ -756,10 +813,13 @@ class OutboxStateDAO(DataDAO):
         """Adds an existing file to an existing scan in the database.
         
         Keyword arguments:
-        scan -- scan object
-        file -- file object
+        scan -- models.Scan object
+        file -- models.File object
         
         """
+        assert isinstance(scan, models.Scan)
+        assert isinstance(f, models.File)
+
         if f.get_id() is None:
             self.add_file(f)
         cursor = self.db.cursor()
@@ -774,15 +834,17 @@ class OutboxStateDAO(DataDAO):
         """Returns all files associated with a particular scan.
         
         Keyword arguments:
-        scan -- scan object
+        scan -- models.Scan object
         
         """
+        assert isinstance(scan, models.Scan)
+
         cursor = self.db.cursor()
         p = (scan.get_id(),)
         files = []
         cursor.execute("SELECT f.id, f.filepath, f.mtime, f.size, f.checksum, f.must_tag FROM scan_files AS s INNER JOIN file AS f ON (s.file_id=f.id) WHERE s.scan_id=?", p)
         for r in cursor.fetchall():
-            files.append(File(**r))
+            files.append(models.File(**r))
         cursor.close()
         return files
 
@@ -815,7 +877,7 @@ class OutboxStateDAO(DataDAO):
         cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) WHERE s.scan_state_id=? OR s.scan_state_id=?", p)
         results = cursor.fetchall()
         for r in results:
-            scan = Scan(**r)
+            scan = models.Scan(**r)
             scan.set_files(self.find_files_in_scan(scan))
             scans.append(scan)
         cursor.close()
@@ -825,10 +887,12 @@ class OutboxStateDAO(DataDAO):
         """Registers a file to be added to tagfiler.
         
         Keyword arguments:
-        f -- file object to register
+        f -- models.File object to register
         
         """
-        registered_file = RegisterFile()
+        assert isinstance(f, models.File)
+
+        registered_file = models.RegisterFile()
         registered_file.set_file(f)
         cursor = self.db.cursor()
         p = (f.get_id(),)
@@ -848,10 +912,13 @@ class OutboxStateDAO(DataDAO):
         """Adds a tag to include in registering a file.
         
         Keyword arguments:
-        register_file -- register file object
-        tag -- tag object to include
+        register_file -- models.RegisterFile object
+        tag -- models.RegisterTag object to include
         
         """
+        assert isinstance(register_file, models.RegisterFile)
+        assert isinstance(tag, models.RegisterTag)
+
         cursor = self.db.cursor()
         p = (register_file.get_id(), tag.get_tag_name(), tag.get_tag_value())
         cursor.execute("SELECT id FROM register_tag WHERE register_file_id=? AND tag_name=? AND tag_value=?", p)
@@ -875,7 +942,7 @@ class OutboxStateDAO(DataDAO):
         results = cursor.fetchall()
         cursor.close()
         for r in results:
-            f = RegisterFile(**r)
+            f = models.RegisterFile(**r)
             f.set_tags(self.find_tags_to_register(f))
             files.append(f)
         return files
@@ -884,9 +951,10 @@ class OutboxStateDAO(DataDAO):
         """Retrieves a list of all tags to include for a file to register
         
         Keyword arguments:
-        register_file -- register file object
+        register_file -- models.RegisterFile object
         
         """
+        assert isinstance(register_file, models.RegisterFile)
         tags = []
         cursor = self.db.cursor()
         p = (register_file.get_id(),)
@@ -894,18 +962,20 @@ class OutboxStateDAO(DataDAO):
         results = cursor.fetchall()
         cursor.close()
         for r in results:
-            tags.append(RegisterTag(**r))
+            tags.append(models.RegisterTag(**r))
         return tags
 
     def remove_registered_file_and_tags(self, registered_file):
         """Removes the registered file and its tags from the database.
         
         Keyword arguments:
-        registered_file -- the registered file to remove
+        registered_file -- models.RegisterFile to remove
         
         """
+        assert isinstance(registered_file, models.RegisterFile)
         p = (registered_file.get_id(),)
         cursor = self.db.cursor()
         cursor.execute("DELETE FROM register_tag WHERE register_file_id=?", p)
         cursor.execute("DELETE FROM register_file WHERE id=?", p)
+        self.db.commit()
         registered_file.set_id(None)

@@ -60,5 +60,5 @@ class Register(worker.Worker):
         
         # TODO: cleanup register_file entry in the database.  SQLite won't allow an object constructed in one
         # thread to be used in another -- do I have to create a DAO in each do_work invocation?
-        self._state_dao.remove_registered_file_and_tags(reg_file)
+        #self._state_dao.remove_registered_file_and_tags(reg_file)
         work_done(reg_file) #TODO(schuler): or emit None, since register is the end of the pipeline

@@ -18,7 +18,7 @@ Implements Outbox management.
 """
 
 import worker, find, tag, register, dao, models
-
+from tagfiler.util import rules
 import logging
 
 
@@ -60,7 +60,8 @@ class Outbox():
                                self._model.get_exclusion_patterns())
         self._tag = tag.Tag(self._tag_q, self._register_q, 
                             self._state_dao,
-                            self._model.get_path_rules()) #TODO(schuler): TBD to verify whether this is the correct parameter for Tag init
+                            self._model.get_all_rules(),
+                            rules.TagDirector())
         self._register = register.Register(
                                     self._register_q, worker.WorkQueue(),
                                     self._state_dao,
