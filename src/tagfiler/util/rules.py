@@ -5,8 +5,18 @@ Created on Sep 19, 2012
 '''
 from tagfiler.iobox.models import PathRule, LineRule, RegisterTag
 import re
+
 class RERuleProcessor(object):
+    """Processes a rerule object into tags.
+    
+    """
     def __init__(self, rerule):
+        """Constructor
+        
+        Keyword arguments:
+        rerule -- rerule object
+        
+        """
         self._rerule = rerule
         self.prepattern_processor = None
         if self._rerule.get_prepattern() is not None:

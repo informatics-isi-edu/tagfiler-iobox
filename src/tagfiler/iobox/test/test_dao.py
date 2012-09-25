@@ -424,12 +424,17 @@ class TestOutboxStateDAO(unittest.TestCase):
         t4 = RegisterTag()
         t4.set_tag_name("tag1")
         t4.set_tag_value("hello")
+        r1.add_tag(t1)
+        r1.add_tag(t2)
+        r1.add_tag(t3)
+        r2.add_tag(t4)
         
-        self.dao.add_tag_to_registered_file(r1, t1)
-        self.dao.add_tag_to_registered_file(r1, t2)
-        self.dao.add_tag_to_registered_file(r1, t3)
-        self.dao.add_tag_to_registered_file(r2, t4)
-        
+        for tag in r1.get_tags():
+            self.dao.add_registered_file_tag(r1, tag)
+            
+        for tag in r2.get_tags():
+            self.dao.add_registered_file_tag(r2, tag)
+            
         assert len(r1.get_tags()) == 3 and len(r2.get_tags()) == 1
         files = self.dao.find_tagged_files_to_register()
         for f in files:

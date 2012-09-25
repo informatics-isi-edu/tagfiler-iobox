@@ -28,6 +28,7 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
+test_endpoint_name = "smithd#tagfiler_ep"
 
 def create_test_outbox():
     outbox = models.Outbox()
@@ -59,6 +60,30 @@ def remove_temp_dirtree(dirs=[]):
         logger.debug("remove_temp_dirtree: %s" % rootdir)
         shutil.rmtree(rootdir, ignore_errors=True)
 
+def create_date_and_study_path_rule():
+    path_rule = models.PathRule()
+    path_rule.set_pattern('^/.*/studies/([^/]+)/([^/]+)/')
+    path_rule.set_extract('positional')
+    date_tag = models.RERuleTag()
+    date_tag.set_tag_name('date')
+    session_tag = models.RERuleTag()
+    session_tag.set_tag_name('session')
+    path_rule.set_tags([date_tag, session_tag])
+        
+    return path_rule
+
+def create_name_path_rule():
+    path_rule = models.PathRule()
+    path_rule.set_pattern('^(?P<path>.*)')
+    path_rule.set_extract('template')
+    t1 = models.RERuleTemplate()
+    t1.set_template('file://%s\g<path>' % test_endpoint_name)
+    path_rule.add_template(t1)
+    tg1 = models.RERuleTag()
+    tg1.set_tag_name('name')
+    path_rule.add_tag(tg1)
+    
+    return path_rule
 
 class OutboxBaseTestCase(unittest.TestCase):
     """Base class for Outbox TestCases.

@@ -26,6 +26,7 @@ import base
 import unittest
 import random
 import time
+import logging
 
 
 def all_tests():
@@ -47,11 +48,14 @@ class RegisterTest(base.OutboxBaseTestCase):
         t = RegisterTag()
         t.set_tag_name("name")
         t.set_tag_value("file://smithd#tagfiler_ep%s" % f.get_filepath())
-        self.state_dao.add_tag_to_registered_file(r, t)
+        r.add_tag(t)
         t = RegisterTag()
         t.set_tag_name("session")
         t.set_tag_value("session9")
-        self.state_dao.add_tag_to_registered_file(r, t)
+        r.add_tag(t)
+        
+        for t in r.get_tags():
+            self.state_dao.add_registered_file_tag(r, t)
         
         register_q = worker.WorkQueue()
         register_q.put(r)
@@ -73,4 +77,5 @@ class RegisterTest(base.OutboxBaseTestCase):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()

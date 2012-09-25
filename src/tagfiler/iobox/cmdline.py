@@ -68,7 +68,10 @@ def remove_temp_outbox_dao(outbox_path, outbox_dao):
     """
     logger.debug("remove_temp_outbox_dao: %s" % outbox_path)
     outbox_dao.close()
-    os.unlink(outbox_path)
+    try:
+        os.unlink(outbox_path)
+    except:
+        logger.warn("Could not remove temporary outbox dao %s" % outbox_path)
 
 def main(args=None):
     """

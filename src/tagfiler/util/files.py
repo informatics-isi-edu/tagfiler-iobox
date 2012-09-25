@@ -3,9 +3,10 @@ File utilities for the tagfiler project.
 """
 
 import os
-import pwd
-import grp
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 def tree_scan(top, 
               expand_dir=lambda dirpath, relpath: relpath, 
@@ -85,16 +86,25 @@ def tree_scan(top,
 def uid2uname(uid):
     """Convert numerid UID to username if possible or leave as number."""
     try:
+        import pwd
         return pwd.getpwuid(uid)[0]
+    except ImportError:
+        logger.warn("Python module pwd cannot be found.")
     except:
-        return uid
+        pass
+    return uid
 
 def gid2gname(gid):
     """Convert numeric GID to groupname if possible or leave as number."""
     try:
+        import grp
         return grp.getgrgid(gid)[0]
+    except ImportError:
+        logger.warn("Python module grp not found.")
     except:
-        return gid
+        pass
+    
+    return gid
 
 def expand_dir_stats(dirpath, relpath):
     """Expand directory stats as a helper function useful with tree_scan expand_dir argument.

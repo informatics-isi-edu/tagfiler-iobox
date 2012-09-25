@@ -33,7 +33,7 @@ class DataDAO(object):
         # create outbox file if it doesn't exist
         if not os.path.exists(self.db_filepath) and logger.isEnabledFor(INFO):
             logger.info("Database file %s doesn't exist, creating." % self.db_filepath)
-        self.db = sqlite3.connect(self.db_filepath, detect_types=sqlite3.PARSE_DECLTYPES)
+        self.db = sqlite3.connect(self.db_filepath, check_same_thread = False, detect_types=sqlite3.PARSE_DECLTYPES)
         self.db.row_factory = _dict_factory
     
     def close(self):
@@ -49,6 +49,7 @@ class DataDAO(object):
                     logger.info("Executing statement %s" % s)
                 cursor.execute(s)
             f.close()
+            self.db.commit()
             cursor.close()
 
 class OutboxDAO(DataDAO):
@@ -175,6 +176,7 @@ class OutboxDAO(DataDAO):
         cursor = self.db.cursor()
         p = (tagfiler.get_url(), tagfiler.get_username(), tagfiler.get_password())
         cursor.execute("INSERT INTO tagfiler (url, username, password) VALUES (?, ?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         tagfiler.set_id(cursor.fetchone()["id"])
         cursor.close()
@@ -199,9 +201,9 @@ class OutboxDAO(DataDAO):
 
         p = (outbox.get_name(), outbox.get_tagfiler().get_id())
         cursor.execute("INSERT INTO outbox (name, tagfiler_id) VALUES (?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         outbox.set_id(cursor.fetchone()["id"])
-        self.db.commit()
         cursor.close()
         return outbox
 
@@ -219,6 +221,7 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO root (outbox_id, filepath) VALUES (?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() as id")
             root.set_id(cursor.fetchone()["id"])
             self.db.commit()
@@ -241,12 +244,14 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO inclusion_pattern (outbox_id, pattern) VALUES (?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             inclusion_pattern.set_id(cursor.fetchone()["id"])
         else:
             inclusion_pattern.set_id(r["id"])
         outbox.add_inclusion_pattern(inclusion_pattern)
-        
+        cursor.close()
+
     def add_exclusion_pattern_to_outbox(self, outbox, exclusion_pattern):
         """Adds a new exclusion pattern to the outbox in the database and appends it to the local object.
         
@@ -261,12 +266,14 @@ class OutboxDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO exclusion_pattern (outbox_id, pattern) VALUES (?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             exclusion_pattern.set_id(cursor.fetchone()["id"])
         else:
             exclusion_pattern.set_id(r["id"])
         outbox.add_exclusion_pattern(exclusion_pattern)
-    
+        cursor.close()
+
     def add_path_rule(self, path_rule):
         """Adds a path_rule to the database.
         
@@ -277,6 +284,7 @@ class OutboxDAO(DataDAO):
         cursor = self.db.cursor()
         p = (path_rule.get_id(),)
         cursor.execute("INSERT INTO path_rule (rerule_id) VALUES (?)", p)
+        self.db.commit()
         cursor.close()
 
     def add_line_rule(self, line_rule):
@@ -296,6 +304,7 @@ class OutboxDAO(DataDAO):
         else:
             p.append(None)
         cursor.execute("INSERT INTO line_rule (name, path_rule_id) VALUES (?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         line_rule.set_id(cursor.fetchone()["id"])
         cursor.close()
@@ -315,6 +324,7 @@ class OutboxDAO(DataDAO):
         cursor = self.db.cursor()
         p = (line_rule.get_id(), rerule.get_id())
         cursor.execute("INSERT INTO line_rule_rerule (line_rule_id, rerule_id) VALUES (?, ?)", p)
+        self.db.commit()
         cursor.close()
 
     def add_rerule(self, rerule):
@@ -329,9 +339,11 @@ class OutboxDAO(DataDAO):
                 self.add_rerule(rerule.get_prepattern())
             p = (rerule.get_name(), rerule.get_pattern().get_id(), rerule.get_extract(), rerule.get_apply(), rerule.get_pattern())
             cursor.execute("INSERT INTO rerule (name, prepattern_id, extract, apply, pattern) VALUES (?, ?, ?, ?, ?)", p)
+            self.db.commit()
         else:
             p = (rerule.get_name(), rerule.get_extract(), rerule.get_apply(), rerule.get_pattern())
             cursor.execute("INSERT INTO rerule (name, extract, apply, pattern) VALUES (?, ?, ?, ?)", p)
+            self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         rerule.set_id(cursor.fetchone()["id"])
         cursor.close()
@@ -360,6 +372,7 @@ class OutboxDAO(DataDAO):
         if r is None:
             p.append(constant.get_constant_value())
             cursor.execute("INSERT INTO rerule_constant (rerule_id, constant_name, constant_value) VALUES (?, ?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             constant.set_id(cursor.fetchone()["id"])
         else:
@@ -376,6 +389,7 @@ class OutboxDAO(DataDAO):
         p = (rerule.get_id(), tag.get_tag_name())
         cursor = self.db.cursor()
         cursor.execute("INSERT INTO rerule_tag (rerule_id, tag_name) VALUES (?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         tag.set_id(cursor.fetchone()["id"])
         cursor.close()
@@ -392,6 +406,7 @@ class OutboxDAO(DataDAO):
         cursor.execute("INSERT INTO rerule_template (rerule_id, template) VALUES (?, ?)", p)
         cursor.execute("SELECT last_insert_rowid() AS id")
         template.set_id(cursor.fetchone()["id"])
+        self.db.commit()
         cursor.close()
 
     def add_rerule_rewrite(self, rerule, rewrite):
@@ -404,6 +419,7 @@ class OutboxDAO(DataDAO):
         p = (rerule.get_id(), rewrite.get_rewrite_pattern(), rewrite.get_rewrite_template())
         cursor = self.db.cursor()
         cursor.execute("INSERT INTO rerule_rewrite (rerule_id, rewrite_pattern, rewrite_template) VALUES (?, ?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         rewrite.set_id(cursor.fetchone()["id"])
         cursor.close()
@@ -420,6 +436,7 @@ class OutboxDAO(DataDAO):
         p = (outbox.get_id(), path_rule.get_id())
         cursor.execute("INSERT INTO outbox_path_rule (outbox_id, path_rule_id) VALUES (?, ?)", p)
         outbox.add_path_rule(path_rule)
+        self.db.commit()
         cursor.close()
 
     def add_line_rule_to_outbox(self, outbox, line_rule):
@@ -435,6 +452,7 @@ class OutboxDAO(DataDAO):
         p = (outbox.get_id(),line_rule.get_id())
         cursor.execute("INSERT INTO outbox_line_rule (outbox_id, line_rule_id) VALUES (?, ?)", p)
         outbox.add_line_rule(line_rule)
+        self.db.commit()
         cursor.close()
         
     def find_outbox_path_rules(self, outbox):
@@ -629,13 +647,14 @@ class OutboxStateDAO(DataDAO):
         p = (state_name,)
         cursor.execute("SELECT id FROM scan_state WHERE state=?", p)
         r = cursor.fetchone()
-        cursor.close()
         if r is None:
             cursor.execute("INSERT INTO scan_state (state) VALUES (?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             state.set_id(cursor.fetchone()['id'])
         else:
             state.set_id(r['id'])
+        cursor.close()
         return state
 
     def find_all_scans(self):
@@ -659,6 +678,7 @@ class OutboxStateDAO(DataDAO):
         cursor = self.db.cursor()
         p = (time.time(), start_state.get_id())
         cursor.execute("INSERT INTO scan (start, scan_state_id) VALUES (?, ?)", p)
+        self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         p = (cursor.fetchone()['id'],)
         cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) WHERE s.id=?", p)
@@ -711,6 +731,7 @@ class OutboxStateDAO(DataDAO):
         if r is None:
             p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag())
             cursor.execute("INSERT INTO file (filepath, mtime, size, checksum, must_tag) VALUES (?, ?, ?, ?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             f.set_id(cursor.fetchone()["id"])
         else:
@@ -728,6 +749,7 @@ class OutboxStateDAO(DataDAO):
         cursor = self.db.cursor()
         p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag(), f.get_id())
         cursor.execute("UPDATE file SET filepath=?, mtime=?, size=?, checksum=?, must_tag=? WHERE id=?", p)
+        self.db.commit()
         cursor.close()
 
     def add_file_to_scan(self, scan, f):
@@ -745,6 +767,7 @@ class OutboxStateDAO(DataDAO):
         cursor.execute("SELECT 1 FROM scan_files WHERE scan_id=? AND file_id=?", p)
         if cursor.fetchone() is None:
             cursor.execute("INSERT INTO scan_files (scan_id, file_id) VALUES (?, ?)", p)
+            self.db.commit()
         cursor.close()
 
     def find_files_in_scan(self, scan):
@@ -775,6 +798,7 @@ class OutboxStateDAO(DataDAO):
         cursor = self.db.cursor()
         p = (completed_state.get_id(), end_time, scan.get_id())
         cursor.execute("UPDATE scan SET scan_state_id=?, end=? WHERE id=?", p)
+        self.db.commit()
         cursor.close()
         scan.set_state(completed_state)
         scan.set_end(end_time)
@@ -812,6 +836,7 @@ class OutboxStateDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO register_file (file_id, added) VALUES (?, date('now'))", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             registered_file.set_id(cursor.fetchone()["id"])
         else:
@@ -819,7 +844,7 @@ class OutboxStateDAO(DataDAO):
         cursor.close()
         return registered_file
 
-    def add_tag_to_registered_file(self, register_file, tag):
+    def add_registered_file_tag(self, register_file, tag):
         """Adds a tag to include in registering a file.
         
         Keyword arguments:
@@ -833,13 +858,12 @@ class OutboxStateDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO register_tag (register_file_id, tag_name, tag_value) VALUES (?, ?, ?)", p)
+            self.db.commit()
             cursor.execute("SELECT last_insert_rowid() AS id")
             tag.set_id(cursor.fetchone()["id"])
         else:
             tag.set_id(r["id"])
         cursor.close()
-        register_file.add_tag(tag)
-        return tag
 
     def find_tagged_files_to_register(self):
         """Retrieves a list of all files to register.

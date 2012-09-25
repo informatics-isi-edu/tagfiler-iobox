@@ -5,57 +5,41 @@ Created on Sep 19, 2012
 '''
 import unittest
 import logging
-from tagfiler.iobox.models import PathRule, RERuleTag, RERuleTemplate, File, RegisterFile
+from tagfiler.iobox.models import File, RegisterFile
 from tagfiler.util.rules import PathRuleProcessor, TagDirector
+from tagfiler.iobox.test import base
+from tagfiler.iobox.test.base import create_date_and_study_path_rule, create_name_path_rule, test_endpoint_name
 
-test_endpoint_name = "smithd#tagfiler_ep"
-def _create_date_and_study_path_rule():
-    path_rule = PathRule()
-    path_rule.set_pattern('^/.*/studies/([^/]+)/([^/]+)/')
-    path_rule.set_extract('positional')
-    date_tag = RERuleTag()
-    date_tag.set_tag_name('date')
-    session_tag = RERuleTag()
-    session_tag.set_tag_name('session')
-    path_rule.set_tags([date_tag, session_tag])
-        
-    return path_rule
+def all_tests():
+    """Returns a TestSuite that includes all test cases in this module."""
+    suite = unittest.TestSuite()
+    suite.addTest(TestPathRuleProcessor())
+    suite.addTest(TestTagDirector())
+    return suite
 
-def _create_name_path_rule():
-    path_rule = PathRule()
-    path_rule.set_pattern('^(?P<path>.*)')
-    path_rule.set_extract('template')
-    t1 = RERuleTemplate()
-    t1.set_template('file://%s\g<path>' % test_endpoint_name)
-    path_rule.add_template(t1)
-    tg1 = RERuleTag()
-    tg1.set_tag_name('name')
-    path_rule.add_tag(tg1)
-    
-    return path_rule
 
 class TestPathRuleProcessor(unittest.TestCase):
     
-    def testAnalyze(self):
-        path_rule = _create_date_and_study_path_rule()
+    def testRun(self):
+        path_rule = create_date_and_study_path_rule()
         processor = PathRuleProcessor(path_rule)
         result = processor.analyze("/opt/data/studies/2012-02-23/session1/myfile.jpg")
         assert result.get('date').pop() == '2012-02-23'
         assert result.get('session').pop() == 'session1'
 
-        path_rule = _create_name_path_rule()
+        path_rule = create_name_path_rule()
         processor = PathRuleProcessor(path_rule)
         result = processor.analyze("/opt/data/studies/2012-02-23/session1/myfile.jpg")
         assert result.get('name').pop() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % test_endpoint_name
         
 class TestTagDirector(unittest.TestCase):
-    def testTagRegisteredFile(self):
+    def testRun(self):
         register_file = RegisterFile()
         f = File()
         f.set_filepath("/opt/data/studies/2012-02-23/session1/myfile.jpg")
         register_file.set_file(f)
         
-        rules = [_create_date_and_study_path_rule(), _create_name_path_rule()]
+        rules = [create_date_and_study_path_rule(), create_name_path_rule()]
         TagDirector().tag_registered_file(rules, register_file)
         assert len(register_file.get_tags()) == 3
         for t in register_file.get_tags():
