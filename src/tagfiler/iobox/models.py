@@ -3,6 +3,7 @@ Created on Sep 10, 2012
 
 @author: smithd
 '''
+import socket
 
 class Outbox(object):
     """outbox configuration object that retains information about its tagfiler, roots, inclusion/exclusion patterns, path/line matches.
@@ -11,6 +12,7 @@ class Outbox(object):
     def __init__(self, **kwargs):
         self.id = kwargs.get("outbox_id")
         self.name = kwargs.get("outbox_name")
+        self.endpoint_name = kwargs.get("endpoint_name", socket.getfqdn().lower())
         self.tagfiler = Tagfiler(**kwargs)
         self.roots = []
         self.inclusion_patterns = []
@@ -27,7 +29,10 @@ class Outbox(object):
         return self.name
     def set_name(self, name):
         self.name = name
-    
+    def get_endpoint_name(self):
+        return self.endpoint_name
+    def set_endpoint_name(self, endpoint_name):
+        self.endpoint_name = endpoint_name
     def get_tagfiler(self):
         return self.tagfiler
     def set_tagfiler(self, tagfiler):
@@ -51,7 +56,11 @@ class Outbox(object):
     def add_exclusion_pattern(self, exclusion_pattern):
         self.exclusion_patterns.append(exclusion_pattern)
     def get_all_rules(self):
-        return self.path_rules.extend(self.line_rules)
+        all_rules = []
+        all_rules.extend(self.path_rules)
+        all_rules.extend(self.line_rules)
+        return all_rules
+
     def get_path_rules(self):
         return self.path_rules
     def set_path_rules(self, path_rules):
@@ -451,3 +460,16 @@ class RegisterFile(object):
             if t.get_tag_name() == tag_name:
                 tag.append(t)
         return tag
+
+def create_default_name_path_rule(endpoint_name):
+    path_rule = PathRule()
+    path_rule.set_pattern('^(?P<path>.*)')
+    path_rule.set_extract('template')
+    t1 = RERuleTemplate()
+    t1.set_template('file://%s\g<path>' % endpoint_name)
+    path_rule.add_template(t1)
+    tg1 = RERuleTag()
+    tg1.set_tag_name('name')
+    path_rule.add_tag(tg1)
+    
+    return path_rule

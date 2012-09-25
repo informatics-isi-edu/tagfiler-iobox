@@ -72,19 +72,6 @@ def create_date_and_study_path_rule():
         
     return path_rule
 
-def create_name_path_rule():
-    path_rule = models.PathRule()
-    path_rule.set_pattern('^(?P<path>.*)')
-    path_rule.set_extract('template')
-    t1 = models.RERuleTemplate()
-    t1.set_template('file://%s\g<path>' % test_endpoint_name)
-    path_rule.add_template(t1)
-    tg1 = models.RERuleTag()
-    tg1.set_tag_name('name')
-    path_rule.add_tag(tg1)
-    
-    return path_rule
-
 class OutboxBaseTestCase(unittest.TestCase):
     """Base class for Outbox TestCases.
     

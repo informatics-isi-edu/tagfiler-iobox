@@ -87,7 +87,7 @@ class OutboxDAO(DataDAO):
         outbox = None
         cursor = self.db.cursor()
         p = (outbox_name,)
-        cursor.execute("SELECT o.id AS outbox_id, o.name as outbox_name, o.tagfiler_id, t.username AS tagfiler_username, t.password AS tagfiler_password FROM outbox o INNER JOIN tagfiler AS t ON (o.tagfiler_id=t.id) WHERE o.name=?", p)
+        cursor.execute("SELECT o.id AS outbox_id, o.name as outbox_name, o.endpoint_name, o.tagfiler_id, t.username AS tagfiler_username, t.password AS tagfiler_password FROM outbox o INNER JOIN tagfiler AS t ON (o.tagfiler_id=t.id) WHERE o.name=?", p)
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
@@ -204,11 +204,15 @@ class OutboxDAO(DataDAO):
             else:
                 outbox.set_tagfiler(tagfiler)
 
-        p = (outbox.get_name(), outbox.get_tagfiler().get_id())
-        cursor.execute("INSERT INTO outbox (name, tagfiler_id) VALUES (?, ?)", p)
+        p = (outbox.get_name(), outbox.get_tagfiler().get_id(), outbox.get_endpoint_name())
+        cursor.execute("INSERT INTO outbox (name, tagfiler_id, endpoint_name) VALUES (?, ?, ?)", p)
         self.db.commit()
         cursor.execute("SELECT last_insert_rowid() AS id")
         outbox.set_id(cursor.fetchone()["id"])
+        
+        # create a default rule if none are set
+        if len(outbox.get_all_rules()) == 0:
+            self.add_path_rule_to_outbox(outbox, models.create_default_name_path_rule(outbox.get_endpoint_name()))
         cursor.close()
         return outbox
 

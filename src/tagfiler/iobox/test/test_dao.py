@@ -113,7 +113,8 @@ class TestOutboxDAO(unittest.TestCase):
         assert outbox.get_inclusion_patterns() is not None and len(outbox.get_inclusion_patterns()) == 2
     def testAddPathRule(self):
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 0
+        # default rule will be added
+        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 1
         pattern_str = '^/.*/studies/([^/]+)/([^/]+)/'
         name_str = "assign directory tags"
         extract_str = "positional"
@@ -150,12 +151,12 @@ class TestOutboxDAO(unittest.TestCase):
         p1.add_constant(c1)
         
         self.dao.add_path_rule_to_outbox(outbox, p1)
-        assert len(outbox.get_path_rules()) == 1
+        assert len(outbox.get_path_rules()) == 2
         for p in outbox.get_path_rules():
             assert p.get_id() is not None
         outbox = self.dao.find_outbox_by_name('test_outbox')
-        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 1
-        path_rule = outbox.get_path_rules()[0]
+        assert outbox.get_path_rules() is not None and len(outbox.get_path_rules()) == 2
+        path_rule = outbox.get_path_rules()[1]
         assert path_rule.get_pattern() == pattern_str
         assert path_rule.get_extract() == extract_str
         assert path_rule.get_apply() == apply_str

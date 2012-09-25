@@ -8,7 +8,9 @@ import logging
 from tagfiler.iobox.models import File, RegisterFile
 from tagfiler.util.rules import PathRuleProcessor, TagDirector
 from tagfiler.iobox.test import base
-from tagfiler.iobox.test.base import create_date_and_study_path_rule, create_name_path_rule, test_endpoint_name
+from tagfiler.iobox.test.base import create_date_and_study_path_rule
+from tagfiler.iobox.models import create_default_name_path_rule
+import socket
 
 def all_tests():
     """Returns a TestSuite that includes all test cases in this module."""
@@ -27,10 +29,10 @@ class TestPathRuleProcessor(unittest.TestCase):
         assert result.get('date').pop() == '2012-02-23'
         assert result.get('session').pop() == 'session1'
 
-        path_rule = create_name_path_rule()
+        path_rule = create_default_name_path_rule(socket.getfqdn())
         processor = PathRuleProcessor(path_rule)
         result = processor.analyze("/opt/data/studies/2012-02-23/session1/myfile.jpg")
-        assert result.get('name').pop() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % test_endpoint_name
+        assert result.get('name').pop() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % socket.getfqdn()
         
 class TestTagDirector(unittest.TestCase):
     def testRun(self):
@@ -39,7 +41,7 @@ class TestTagDirector(unittest.TestCase):
         f.set_filepath("/opt/data/studies/2012-02-23/session1/myfile.jpg")
         register_file.set_file(f)
         
-        rules = [create_date_and_study_path_rule(), create_name_path_rule()]
+        rules = [create_date_and_study_path_rule(), create_default_name_path_rule(socket.gethostname())]
         TagDirector().tag_registered_file(rules, register_file)
         assert len(register_file.get_tags()) == 3
         for t in register_file.get_tags():
@@ -48,7 +50,7 @@ class TestTagDirector(unittest.TestCase):
             elif t.get_tag_name() == "session":
                 assert t.get_tag_value() == "session1"
             elif t.get_tag_name() == "name":
-                assert t.get_tag_value() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % test_endpoint_name
+                assert t.get_tag_value() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % socket.gethostname()
             else:
                 assert False
 

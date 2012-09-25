@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS tagfiler (
 CREATE TABLE IF NOT EXISTS outbox (
     id INTEGER NOT NULL PRIMARY KEY,
     tagfiler_id INTEGER NOT NULL REFERENCES tagfiler(id),
-    name TEXT
+    name TEXT,
+    endpoint_name TEXT
 );
 
 CREATE TABLE IF NOT EXISTS inclusion_pattern (
