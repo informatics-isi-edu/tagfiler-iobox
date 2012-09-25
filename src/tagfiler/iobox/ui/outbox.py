@@ -1,45 +1,66 @@
+
 import sys
-
-import sip
-sip.setapi('QVariant', 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtGui
 
 
-class OutboxUI():
+# I'll probably turn this into a class next to take more control of the action
+# handling
+def _create_tray_icon(controller):
+    # Create tray icon menu
+    trayIconMenu = QtGui.QMenu()
     
-    def __init__(self):
-        self.widget = QtGui.QWidget()
-        self.createActions()
-        self.createTrayIcon()
+    trayIconMenu.addAction(QtGui.QAction("&Configure", 
+                                trayIconMenu, 
+                                triggered=controller.configure))
+
+    trayIconMenu.addAction(QtGui.QAction("&Start", 
+                                trayIconMenu, 
+                                triggered=controller.start))
+    
+    trayIconMenu.addSeparator()
+    
+    trayIconMenu.addAction(QtGui.QAction("&Quit", 
+                                trayIconMenu, 
+                                triggered=controller.quit))
+                                
+    # Create tray icon
+    trayIcon = QtGui.QSystemTrayIcon(QtGui.QIcon("tag.gif"))
+    trayIcon.setContextMenu(trayIconMenu)
+    return trayIcon
+
+
+class OutboxController():
+    
+    def configure(self):
+        print 'time to configure'
+
+    def start(self):
+        print 'time to start'
         
-    def createActions(self):
-        self.quitAction = QtGui.QAction("&Quit", self.widget, triggered=QtGui.qApp.quit)
-        
-    def createTrayIcon(self):
-        # Create tray icon menu
-        self.trayIconMenu = QtGui.QMenu(self.widget)
-        self.trayIconMenu.addAction(self.quitAction)
-        # Create tray icon
-        self.trayIcon = QtGui.QSystemTrayIcon(QtGui.QIcon("tag.gif"), self.widget)
-        self.trayIcon.setContextMenu(self.trayIconMenu)
-        
-    def show(self):
-#        self.widget.show()
-        self.trayIcon.show()
+    def quit(self):
+        print "quitin' time!"
+        QtGui.qApp.quit()
 
 
 def main():
     app = QtGui.QApplication(sys.argv)
     QtGui.QApplication.setQuitOnLastWindowClosed(False)
     
-    outbox = OutboxUI()
-    outbox.show()
-#    w = QtGui.QWidget()
-#    trayIcon = SystemTrayIcon(QtGui.QIcon("tag.gif"), w)
-#    trayIcon.show()
+    if QtGui.QSystemTrayIcon.isSystemTrayAvailable():
+        print 'system tray available'
+    else:
+        print 'system tray not available'
+        sys.exit(1)
+    
+    if QtGui.QSystemTrayIcon.supportsMessages():
+        print 'system supports balloon messages'
+        
+    controller = OutboxController()
+    trayIcon = _create_tray_icon(controller)
+    trayIcon.show()
     
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
