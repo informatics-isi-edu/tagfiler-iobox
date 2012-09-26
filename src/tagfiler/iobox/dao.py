@@ -45,8 +45,7 @@ class DataDAO(object):
             f = open(source_file, "r")
             sql_stmts = str.split(f.read(), ";")
             for s in sql_stmts:
-                if logger.isEnabledFor(INFO):
-                    logger.info("Executing statement %s" % s)
+                logger.debug("Executing statement %s" % s)
                 cursor.execute(s)
             f.close()
             self.db.commit()
