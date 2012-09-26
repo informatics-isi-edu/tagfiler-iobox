@@ -37,18 +37,80 @@ sys.stderr = console_out
 logging.basicConfig(level=logging.DEBUG)
 
 
+class PreferencesDialog(QtGui.QDialog):
+    """Outbox preferences dialog."""
+    
+    def __init__(self, outbox_model):
+        """Initializes a new instance.
+        
+        The 'outbox_model' parameter is required.
+        """
+        super(PreferencesDialog, self).__init__()
+
+        assert isinstance(outbox_model, models.Outbox)
+        self.outbox_model = outbox_model
+        
+        mainLayout = QtGui.QVBoxLayout()
+        mainLayout.addWidget(self.create_basic_box())
+        mainLayout.addWidget(self.create_tagfiler_box())
+        mainLayout.addWidget(self.create_roots_box())
+        self.setLayout(mainLayout)
+        self.setWindowTitle('Preferences')
+    
+    def create_basic_box(self):
+        basic_box = QtGui.QGroupBox('Basics')
+        name_label = QtGui.QLabel('Name:')
+        name_edit = QtGui.QLineEdit(self.outbox_model.get_name())
+        
+        grid = QtGui.QGridLayout()
+        grid.addWidget(name_label, 0, 0)
+        grid.addWidget(name_edit, 0, 1)
+        basic_box.setLayout(grid)
+        return basic_box
+    
+    def create_tagfiler_box(self):
+        tagfiler = self.outbox_model.get_tagfiler()
+        tagfiler_box = QtGui.QGroupBox('Tagfiler')
+        url_label = QtGui.QLabel('URL:')
+        usr_label = QtGui.QLabel('Username:')
+        pwd_label = QtGui.QLabel('Password')
+        url_edit = QtGui.QLineEdit(tagfiler.get_url())
+        usr_edit = QtGui.QLineEdit(tagfiler.get_username())
+        pwd_edit = QtGui.QLineEdit(tagfiler.get_password())
+        
+        grid = QtGui.QGridLayout()
+        grid.addWidget(url_label, 0, 0)
+        grid.addWidget(url_edit, 0, 1)
+        grid.addWidget(usr_label, 1, 0)
+        grid.addWidget(usr_edit, 1, 1)
+        grid.addWidget(pwd_label, 2, 0)
+        grid.addWidget(pwd_edit, 2, 1)
+        tagfiler_box.setLayout(grid)
+        return tagfiler_box
+    
+    def create_roots_box(self):
+        box = QtGui.QGroupBox('Root directories')
+        vlayout = QtGui.QVBoxLayout()
+        roots = self.outbox_model.get_roots()
+        for root in roots:
+            vlayout.addWidget(QtGui.QLabel(root.get_filepath()))
+        box.setLayout(vlayout)
+        return box
+
+
 class ConsoleWindow(QtGui.QWidget):
+    """Outbox console messages window."""
     
     def __init__(self):
         super(ConsoleWindow, self).__init__()
 
-        self.setupGui()
+        self.setup()
         self.setWindowTitle("Console Messages")
         
     def close(self):
         self.hide()
 
-    def setupGui(self):
+    def setup(self):
         close_button = QtGui.QPushButton("C&lose")
         close_button.clicked.connect(self.close)
 
@@ -125,11 +187,11 @@ class OutboxTrayIconController():
         self.outbox_dao = outbox_dao
         self.outbox_model = outbox_model
         self.console_window = ConsoleWindow()
+        self.preferences_dialog = PreferencesDialog(self.outbox_model)
         self.outbox_manager = None
         
     def preferences(self):
-        print 'time to configure'
-        self.start_action.setEnabled(True)
+        self.preferences_dialog.show()
         
     def console(self):
         self.console_window.text_edit.clear()
