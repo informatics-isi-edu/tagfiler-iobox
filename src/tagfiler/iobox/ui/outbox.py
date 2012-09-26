@@ -17,7 +17,7 @@
 Experimental desktop GUI client for the Tagfiler Outbox.
 """
 
-from tagfiler.iobox import config, dao, models, outbox
+from tagfiler.iobox import config, dao, models, outbox, ui
 
 from PyQt4 import QtCore, QtGui
 
@@ -247,7 +247,8 @@ def main():
         config.load_or_create_outbox(default_name, default_path)
         
     # Create the tray icon view and controller
-    trayicon = OutboxTrayIconView(QtGui.QIcon("tag.gif"))
+    tag_filename = os.path.join(os.path.dirname(ui.__file__), "tag.gif")
+    trayicon = OutboxTrayIconView(QtGui.QIcon(tag_filename))
     controller = OutboxTrayIconController(outbox_dao, outbox_model)
     controller.start_action = trayicon.start_action
     controller.stop_action = trayicon.stop_action
