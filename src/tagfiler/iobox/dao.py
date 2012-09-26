@@ -87,7 +87,7 @@ class OutboxDAO(DataDAO):
         outbox = None
         cursor = self.db.cursor()
         p = (outbox_name,)
-        cursor.execute("SELECT o.id AS outbox_id, o.name as outbox_name, o.endpoint_name, o.tagfiler_id, t.username AS tagfiler_username, t.password AS tagfiler_password FROM outbox o INNER JOIN tagfiler AS t ON (o.tagfiler_id=t.id) WHERE o.name=?", p)
+        cursor.execute("SELECT o.id AS outbox_id, o.name as outbox_name, o.endpoint_name, o.tagfiler_id, t.username AS tagfiler_username, t.password AS tagfiler_password, t.url as tagfiler_url FROM outbox o INNER JOIN tagfiler AS t ON (o.tagfiler_id=t.id) WHERE o.name=?", p)
         r = cursor.fetchone()
         cursor.close()
         if r is not None:
