@@ -183,3 +183,12 @@ def tree_scan_stats_sha256(top, excludes=[], includes=[]):
     """Convenience wrapper for tree_scan."""
     return tree_scan(top, expand_dir=expand_dir_stats_sha256, expand_file=expand_file_stats_sha256, excludes=excludes, includes=includes)
 
+def create_uri_friendly_file_path(dir_path, rfilename):
+    """
+    Creates a full file path with uri-friendly path separators so that it can
+    be used in a file:// uri
+    """
+    file_path = "%s%s" % (dir_path.replace("\\","/"), rfilename.replace("\\","/"))
+    if file_path[0] != "/":
+        file_path = "/%s" % file_path
+    return file_path

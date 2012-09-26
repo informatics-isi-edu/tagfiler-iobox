@@ -749,7 +749,7 @@ class OutboxStateDAO(DataDAO):
         """
         scan = None
         cursor = self.db.cursor()
-        cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) ORDER BY s.end DESC LIMIT 1")
+        cursor.execute("SELECT s.id, s.start, s.end, s.scan_state_id, st.state FROM scan AS s INNER JOIN scan_state AS st ON (s.scan_state_id=st.id) ORDER BY s.start DESC LIMIT 1")
         r = cursor.fetchone()
         cursor.close()
         if r is not None:

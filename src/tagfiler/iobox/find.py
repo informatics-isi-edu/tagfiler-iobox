@@ -22,12 +22,10 @@ model objects.
 """
 
 import tagfiler.iobox.worker as worker
-from tagfiler.util.files import tree_scan_stats
+from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
 from tagfiler.iobox.models import Root, File
 from tagfiler.iobox.dao import OutboxStateDAO
-
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +56,7 @@ class Find(worker.Worker):
         for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
-            f = File(filepath="%s%s" % (path, rfpath), size=size, mtime=mtime, 
+            f = File(filepath=create_uri_friendly_file_path(path, rfpath), size=size, mtime=mtime, 
                      user=user, group=group, must_tag=True)
             #self._state_dao.add_file(f) #TODO: fix database locking issue
             work_done(f)

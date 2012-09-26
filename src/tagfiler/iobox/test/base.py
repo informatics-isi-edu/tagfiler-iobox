@@ -130,4 +130,6 @@ class OutboxBaseTestCase(unittest.TestCase):
         remove_temp_dirtree(self.rootdirs)
         
         # Remove the temporary OutboxDAO
+        remove_temp_outbox_dao(self.state_dao.db_filepath, self.state_dao)
         remove_temp_outbox_dao(self.outbox_path, self.outbox_dao)
+        
