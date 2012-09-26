@@ -28,13 +28,9 @@ import time
 import cStringIO
 
 
-# Ugly and convoluted, but its a work-in-progress
-# TODO: this should be cleaned up later
 logger = logging.getLogger(__name__)
+# TODO: change this from being a global
 console_out = cStringIO.StringIO()
-logger.addHandler(logging.StreamHandler(console_out))
-sys.stderr = console_out
-logging.basicConfig(level=logging.DEBUG)
 
 
 class PreferencesDialog(QtGui.QDialog):
@@ -225,7 +221,7 @@ class OutboxTrayIconController():
 
 
 def main():
-    logger.setLevel(logging.DEBUG)
+    logging.basicConfig(stream=console_out, level=logging.DEBUG)
     logger.info('Welcome to Tagfiler Outbox.')
 
     app = QtGui.QApplication(sys.argv)
