@@ -4,6 +4,6 @@ setup(name='tagfiler-iobox',
       description='Tagfiler IOBox',
       packages=['tagfiler', 'tagfiler.iobox', 'tagfiler.util', 'tagfiler.iobox.ui'],
       package_dir={'': 'src'},
-      package_data={'tagfiler.iobox.ui': ['tag.gif'], 'tagfiler.iobox': ['sql/*.sql']},
+      package_data={'tagfiler.iobox.ui': ['icons/*.gif'], 'tagfiler.iobox': ['sql/*.sql']},
       scripts=['bin/tagfiler-outbox', 'bin/tagfiler-outbox-config', 'bin/tagfiler-outbox-systray']
       )

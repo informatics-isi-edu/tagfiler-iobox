@@ -243,7 +243,7 @@ def main():
         config.load_or_create_outbox(default_name, default_path)
         
     # Create the tray icon view and controller
-    tag_filename = os.path.join(os.path.dirname(ui.__file__), "tag.gif")
+    tag_filename = os.path.join(os.path.dirname(ui.__file__), 'icons', 'tag.gif')
     trayicon = OutboxTrayIconView(QtGui.QIcon(tag_filename))
     controller = OutboxTrayIconController(outbox_dao, outbox_model)
     controller.start_action = trayicon.start_action
