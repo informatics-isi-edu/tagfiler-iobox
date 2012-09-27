@@ -19,7 +19,7 @@
 Main script to invoke the Tagfiler Outbox.
 """
 
-from tagfiler.iobox.ui import outbox
+from tagfiler.iobox.ui import systray
 
 if __name__ == "__main__":
-    outbox.main()
+    systray.main()
