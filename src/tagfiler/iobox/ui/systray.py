@@ -249,11 +249,13 @@ def main():
     controller.start_action = trayicon.start_action
     controller.stop_action = trayicon.stop_action
     controller.preferences_action = trayicon.preferences_action
-    trayicon.preferences_action.triggered.connect(controller.preferences)
-    trayicon.console_action.triggered.connect(controller.console)
-    trayicon.start_action.triggered.connect(controller.start)
-    trayicon.stop_action.triggered.connect(controller.stop)
-    trayicon.quit_action.triggered.connect(controller.quit)
+    
+    QtCore.QObject.connect(trayicon.preferences_action, QtCore.SIGNAL('triggered()'), controller.preferences)
+    QtCore.QObject.connect(trayicon.console_action, QtCore.SIGNAL('triggered()'), controller.console)
+    QtCore.QObject.connect(trayicon.start_action, QtCore.SIGNAL('triggered()'), controller.start)
+    QtCore.QObject.connect(trayicon.stop_action, QtCore.SIGNAL('triggered()'), controller.stop)
+    QtCore.QObject.connect(trayicon.quit_action, QtCore.SIGNAL('triggered()'), controller.quit)
+
     trayicon.show()
     
     sys.exit(app.exec_())
