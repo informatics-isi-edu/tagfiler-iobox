@@ -17,7 +17,7 @@
 A PyQt based Preferences dialog for the Tagfiler Outbox.
 """
 
-from tagfiler.iobox import config, dao, models, outbox
+from tagfiler.iobox import config
 
 from PyQt4 import QtGui
 
@@ -34,6 +34,10 @@ class PreferencesDialog(QtGui.QDialog):
         
         tabWidget = QtGui.QTabWidget()
         tabWidget.addTab(TagfilerTab(outbox_model.get_tagfiler()), "Tagfiler")
+        tabWidget.addTab(RootTab(outbox_model.get_roots()), "Root Directories")
+        tabWidget.addTab(PatternTab(outbox_model.get_exclusion_patterns()), "Exclusion Patterns")
+        tabWidget.addTab(PatternTab(outbox_model.get_inclusion_patterns()), "Inclusion Patterns")
+        tabWidget.addTab(RERuleTab(outbox_model.get_path_rules()), "Path Rules")
 
         buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
 
@@ -79,6 +83,84 @@ class TagfilerTab(QtGui.QWidget):
         layout.addWidget(passwordLabel)
         layout.addWidget(passwordEdit)
         layout.addStretch(1)
+        self.setLayout(layout)
+
+
+class RootTab(QtGui.QWidget):
+    def __init__(self, roots, parent=None):
+        """Constructor.
+        
+        Requires 'roots' parameter. A list of models.Root objects.
+        """
+        super(RootTab, self).__init__(parent)
+        
+        rootsLabel = QtGui.QLabel("Roots")
+        rootsList = QtGui.QListWidget()
+        
+        for root in roots:
+            rootsList.addItem(root.get_filepath())
+        
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(rootsLabel)
+        layout.addWidget(rootsList)
+        self.setLayout(layout)
+
+
+class PatternTab(QtGui.QWidget):
+    def __init__(self, patterns, parent=None):
+        """Constructor.
+        
+        Requires 'patterns' parameter. A list of models.Pattern objects.
+        """
+        super(PatternTab, self).__init__(parent)
+        
+        plabel = QtGui.QLabel("Patterns")
+        plist = QtGui.QListWidget()
+        
+        for pattern in patterns:
+            list.addItem(pattern.get_pattern())
+        
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(plabel)
+        layout.addWidget(plist)
+        self.setLayout(layout)
+
+
+class RERuleTab(QtGui.QWidget):
+    def __init__(self, rerules, parent=None):
+        """Constructor.
+        
+        Requires 'rerules' parameter. A list of models.RERules objects.
+        """
+        super(RERuleTab, self).__init__(parent)
+        
+        label = QtGui.QLabel("Rules")
+        table = QtGui.QTableWidget(0, 5)
+        table.setHorizontalHeaderLabels(("Name", "Pre-Pattern", "Pattern", "Apply", "Extract"))
+        table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
+                
+        row = 0
+        for rule in rerules:
+            table.insertRow(row)
+            
+            name = rule.get_name()
+            if name is None:
+                name = "None"
+                
+            prepattern = rule.get_prepattern()
+            if prepattern is None:
+                prepattern = "None"
+                
+            table.setItem(row, 0, QtGui.QTableWidgetItem(name))
+            table.setItem(row, 1, QtGui.QTableWidgetItem(prepattern))
+            table.setItem(row, 2, QtGui.QTableWidgetItem(rule.get_pattern()))
+            table.setItem(row, 3, QtGui.QTableWidgetItem(rule.get_apply()))
+            table.setItem(row, 4, QtGui.QTableWidgetItem(rule.get_extract()))
+            row += 1
+        
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(table)
         self.setLayout(layout)
 
 
