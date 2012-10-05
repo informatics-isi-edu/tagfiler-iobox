@@ -26,12 +26,20 @@ import sys
 import os
 import logging
 import time
-import cStringIO
 
 
 logger = logging.getLogger(__name__)
-# TODO: change this from being a global
-console_out = cStringIO.StringIO()
+
+
+class ConsoleStream():
+    """A stream that appends text to the console window text widget. A bit
+    kludgy. And it isn't working well. There is a better way to do this."""
+    
+    def __init__(self, textedit):
+        self.textedit = textedit
+        
+    def write(self, text):
+        self.textedit.append(text)
 
 
 class ConsoleWindow(QtGui.QWidget):
@@ -54,12 +62,15 @@ class ConsoleWindow(QtGui.QWidget):
         bottomLayout.addWidget(close_button)
 
         self.text_edit = QtGui.QTextEdit()
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setMinimumSize(600, 600)
 
         mainLayout = QtGui.QVBoxLayout()
         mainLayout.addWidget(self.text_edit)
         mainLayout.addLayout(bottomLayout)
 
         self.setLayout(mainLayout)
+
 
 class OutboxTrayIconView():
     """The view of the Outbox system tray icon.
@@ -95,7 +106,7 @@ class OutboxTrayIconView():
         menu.addAction(self.stop_action)
         menu.addSeparator()
         menu.addAction(self.preferences_action)
-        menu.addAction(self.help_action)
+        #menu.addAction(self.help_action)
         menu.addAction(self.console_action)
         menu.addSeparator()
         menu.addAction(self.quit_action)
@@ -111,7 +122,7 @@ class OutboxTrayIconController():
     """The controller of the Outbox system tray icon.
     """
     
-    def __init__(self, outbox_dao, outbox_model):
+    def __init__(self, outbox_dao, outbox_model, console_window):
         """Initialize the object.
         
         The 'outbox_dao' is required.
@@ -122,7 +133,7 @@ class OutboxTrayIconController():
         assert isinstance(outbox_model, models.Outbox)
         self.outbox_dao = outbox_dao
         self.outbox_model = outbox_model
-        self.console_window = ConsoleWindow()
+        self.console_window = console_window
         self.preferences_dialog = PreferencesDialog(self.outbox_model)
         self.outbox_manager = None
         
@@ -130,8 +141,6 @@ class OutboxTrayIconController():
         self.preferences_dialog.show()
         
     def console(self):
-        self.console_window.text_edit.clear()
-        self.console_window.text_edit.append(console_out.getvalue())
         self.console_window.show()
 
     def start(self):
@@ -161,15 +170,20 @@ class OutboxTrayIconController():
 
 
 def main():
-    logging.basicConfig(stream=console_out, level=logging.DEBUG)
-    logger.info('Welcome to Tagfiler Outbox.')
-
     app = QtGui.QApplication(sys.argv)
     app.setApplicationName('Tagfiler Outbox')
     QtGui.QApplication.setQuitOnLastWindowClosed(False)
     
+    # Setup the kludgy console window and stream
+    console_window = ConsoleWindow()
+    console_out = ConsoleStream(console_window.text_edit)
+    
+    # Configure log output to console stream
+    logging.basicConfig(stream=console_out, level=logging.DEBUG)
+    logger.info('Welcome to Tagfiler Outbox.')
+    
     if not QtGui.QSystemTrayIcon.isSystemTrayAvailable():
-        logger.critical('Your system does not support the desktop system tray.')
+        print 'Your system does not support the desktop system tray.'
         sys.exit(1)
     
     if not QtGui.QSystemTrayIcon.supportsMessages():
@@ -185,7 +199,7 @@ def main():
     # Create the tray icon view and controller
     tag_filename = os.path.join(os.path.dirname(ui.__file__), 'icons', 'tag.gif')
     trayicon = OutboxTrayIconView(QtGui.QIcon(tag_filename))
-    controller = OutboxTrayIconController(outbox_dao, outbox_model)
+    controller = OutboxTrayIconController(outbox_dao, outbox_model, console_window)
     controller.start_action = trayicon.start_action
     controller.stop_action = trayicon.stop_action
     controller.preferences_action = trayicon.preferences_action
