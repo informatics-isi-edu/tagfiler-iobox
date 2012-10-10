@@ -62,6 +62,7 @@ class Find(worker.Worker):
                 f = File(filepath=filepath, size=size, mtime=mtime, 
                      user=user, group=group, must_tag=True)
                 self._state_dao.add_file(f)
+                work_done(f)
             else:
                 # determine if the file has changed since the last scan
                 if size != file.get_size():
@@ -69,8 +70,9 @@ class Find(worker.Worker):
                     f.set_mtime(mtime)
                     f.set_must_tag(True)
                     self._state_dao.update_file(f)
+                    work_done(f)
                 elif mtime > f.get_mtime():
                     # TODO: compute checksum of file and compare.
                     # If the checksums differ, update for tagging
                     pass
-            work_done(f)
+           
