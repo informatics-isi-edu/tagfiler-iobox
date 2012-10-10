@@ -56,7 +56,21 @@ class Find(worker.Worker):
         for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
-            f = File(filepath=create_uri_friendly_file_path(path, rfpath), size=size, mtime=mtime, 
+            filepath = create_uri_friendly_file_path(path, rfpath)
+            f = self._state_dao.find_file_by_path(filepath)
+            if f is None:
+                f = File(filepath=filepath, size=size, mtime=mtime, 
                      user=user, group=group, must_tag=True)
-            #self._state_dao.add_file(f) #TODO: fix database locking issue
+                self._state_dao.add_file(f)
+            else:
+                # determine if the file has changed since the last scan
+                if size != file.get_size():
+                    f.set_size(size)
+                    f.set_mtime(mtime)
+                    f.set_must_tag(True)
+                    self._state_dao.update_file(f)
+                elif mtime > f.get_mtime():
+                    # TODO: compute checksum of file and compare.
+                    # If the checksums differ, update for tagging
+                    pass
             work_done(f)

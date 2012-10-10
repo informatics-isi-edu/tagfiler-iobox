@@ -46,7 +46,8 @@ def all_tests():
     suite.addTest(TestGetScansToTag())
     suite.addTest(TestRegisterFile())
     suite.addTest(TestGetAndAddTagToRegisteredFile())
-    
+    suite.addTest(TestFindFilesToTag())
+
     return suite
 
 
@@ -440,7 +441,25 @@ class TestGetAndAddTagToRegisteredFile(base.OutboxBaseTestCase):
         assert len(r1.get_tags()) == 3 and len(r2.get_tags()) == 1
         files = self.state_dao.find_tagged_files_to_register()
         for f in files:
-            assert len(f.get_tags()) > 1
+            assert len(f.get_tags()) >= 1
+
+class TestFindFilesToTag(base.OutboxBaseTestCase):
+    def runTest(self):
+        assert 0 == len(self.state_dao.find_files_to_tag())
+        scan = self.state_dao.start_file_scan()
+        for i in range(0, 10):
+            f = File()
+            f.set_filepath("/home/smithd/test%i.txt" % i)
+            self.state_dao.add_file(f)
+            self.state_dao.add_file_to_scan(scan, f)
+        files = self.state_dao.find_files_to_tag()
+        assert 10 == len(files)
+        
+        for i in range (0, 4):
+            files[i].set_must_tag(False)
+            self.state_dao.update_file(files[i])
+            
+        assert 6 == len(self.state_dao.find_files_to_tag())
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

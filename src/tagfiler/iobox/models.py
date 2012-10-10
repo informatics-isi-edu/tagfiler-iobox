@@ -117,6 +117,9 @@ class Root(object):
     def set_filepath(self, filepath):
         self.filepath = filepath
 
+    def __str__(self):
+        return self.filepath
+
 class Pattern(object):
     """Abstract parent for patterns associated with an outbox.
     
@@ -354,6 +357,9 @@ class File(object):
     def get_must_tag(self):
         return self.must_tag
 
+    def __str__(self):
+        return self.filepath
+
 class ScanState(object):
     """Current state of a scan.
     
@@ -460,6 +466,13 @@ class RegisterFile(object):
             if t.get_tag_name() == tag_name:
                 tag.append(t)
         return tag
+
+    def __str__(self):
+        s = "%s [" % str(self.file)
+        for t in self.tags:
+            s += "%s=%s, " % (t.get_tag_name(), t.get_tag_value())
+        s += "]"
+        return s
 
 def create_default_name_path_rule(endpoint_name):
     path_rule = PathRule()

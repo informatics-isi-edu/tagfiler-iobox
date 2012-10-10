@@ -51,6 +51,19 @@ class Outbox():
         # Populate Find's queue with the root directories.
         for root in self._model.get_roots():
             self._find_q.put(root)
+            logger.debug("Added root %s to the Find queue" % str(root))
+
+        # Populate the Tag queue with any files that have been scanned
+        # but need to be tagged
+        for f in self._state_dao.find_files_to_tag():
+            self._tag_q.put(f)
+            logger.debug("Added file %s to the Tag queue" % str(f))
+
+        # Populate the Register queue with any files that have been registered
+        # and tagged in a previous session
+        for register_file in self._state_dao.find_tagged_files_to_register():
+            self._register_q.put(register_file)
+            logger.debug("Added register file %s to the Register queue" % str(register_file))
 
         # The pipeline consists of the Find, Tag, and Register workers with their
         # associated WorkQueues.

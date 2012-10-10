@@ -54,7 +54,8 @@ def create_temp_outbox_dao():
     pathname to the temporary file that contains the Outbox database, and
     'outbox_dao' is an instance of the OutboxDAO.
     """
-    (outbox_file, outbox_path) = tempfile.mkstemp()
+    outbox_dir = tempfile.mkdtemp()
+    (outbox_file, outbox_path) = tempfile.mkstemp(dir=outbox_dir)
     logger.debug("create_temp_outbox_dao: %s" % outbox_path)
     outbox_dao = dao.OutboxDAO(outbox_path)
     return (outbox_path, outbox_dao)

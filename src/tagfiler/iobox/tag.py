@@ -40,14 +40,12 @@ class Tag(worker.Worker):
         assert isinstance(task, models.File)
         fileobj = task
         logger.debug('do_work: File: %s' % fileobj)
-        #reg_file = self._state_dao.register_file(fileobj) # TODO: fix database locking
-        # remove these two lines when fixed
-        reg_file = models.RegisterFile()
-        reg_file.set_file(fileobj) 
+        reg_file = self._state_dao.register_file(fileobj) 
 
         self._tag_director.tag_registered_file(self._rules, reg_file)
         
-        # TODO: fix database locking
-        #for tag in reg_file.get_tags():
-        #    self._state_dao.add_registered_file_tag(reg_file, tag)
+        for tag in reg_file.get_tags():
+            self._state_dao.add_registered_file_tag(reg_file, tag)
+        reg_file.get_file().set_must_tag(False)
+        self._state_dao.update_file(reg_file.get_file())
         work_done(reg_file)
