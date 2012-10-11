@@ -65,7 +65,7 @@ class Find(worker.Worker):
                 work_done(f)
             else:
                 # determine if the file has changed since the last scan
-                if size != file.get_size():
+                if size != f.get_size():
                     f.set_size(size)
                     f.set_mtime(mtime)
                     f.set_must_tag(True)
