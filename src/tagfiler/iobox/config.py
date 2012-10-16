@@ -61,9 +61,9 @@ def load_or_create_outbox(name, path):
     if outbox_model is None:
         outbox_model = models.Outbox(outbox_name=name)
         tagfiler = models.Tagfiler()
-        tagfiler.set_url('https://jacoby.isi.edu/tagfiler')
-        tagfiler.set_username('smithd')
-        tagfiler.set_password('smithd')
+        tagfiler.set_url('https://curiosity.isi.edu/tagfiler')
+        tagfiler.set_username('demo')
+        tagfiler.set_password('demo')
         outbox_model.set_tagfiler(tagfiler)
         outbox_dao.add_outbox(outbox_model)
     return (outbox_dao, outbox_model)

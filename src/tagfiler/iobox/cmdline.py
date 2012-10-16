@@ -21,6 +21,7 @@ import os
 import logging
 import tempfile
 import argparse
+import json
 
 import dao, models, outbox, version
 import config # TODO: refactor this out, no crossrefs
@@ -92,7 +93,7 @@ def main(args=None):
                         help='name of the outbox to configure')
     # Use home directory as default location for outbox.conf
     default_config_path = os.path.join(os.path.expanduser('~'), 
-                                       '.tagfiler', 'outbox.conf')
+                                       '.tagfiler', 'outbox.json')
     parser.add_argument('-f', '--filename', type=str, 
                         default=default_config_path,
                         help=('configuration filename (default: %s)' % 
@@ -108,9 +109,14 @@ def main(args=None):
     # Inclusion/Exclusion option group
     group = parser.add_argument_group(title='File filters')
     group.add_argument('--include', type=str, nargs='+',
-                       help='regular expression for includes pattern')
+                       help='inclusion pattern (regular expression)')
     group.add_argument('--exclude', type=str, nargs='+',
-                       help='regular expression for excludes pattern')
+                       help='exclusion pattern (regular expression)')
+    
+    # Tag rules option group
+    group = parser.add_argument_group(title='Tag rules')
+    group.add_argument('--pathrule', type=str, nargs='+',
+                       help='path tagging rule (regular expression)')
     
     # Tagfiler option group
     group = parser.add_argument_group(title='Tagfiler options')
@@ -137,37 +143,97 @@ def main(args=None):
         logging.basicConfig(level=__LOGLEVEL[verbosity])
         logger.debug(args)
     
-    # Get the Outbox model object
-    (outbox_dao, outbox_model) = config.load_or_create_outbox(
-                                                    args.name, 
-                                                    args.filename)
-    state_dao = outbox_dao.get_state_dao(outbox_model)
+    # Load configuration file, or create configuration based on arguments
+    cfg = {}
+    if os.path.exists(args.filename):
+        f = open(args.filename)
+        cfgstr = f.read()
+        try:
+            cfg = json.loads(cfgstr)
+        except ValueError as e:
+            print 'Could not load configuration file.'
+            print e
     
-    # Add include/exclusion patterns
-    if args.exclude:
-        expat = models.ExclusionPattern(pattern=args.exclude)
-        outbox_model.add_exclusion_pattern(expat)
-        
-    if args.include:
-        inpat = models.InclusionPattern(pattern=args.include)
-        outbox_model.add_inclusion_pattern(inpat)
+    # Load Tagfiler
+    tagfiler = models.Tagfiler()
     
-    # Add the roots from the command-line
+    url = cfg.get('url') or args.url
+    if url:
+        tagfiler.set_url(url)
+    else:
+        parser.error('Tagfiler URL must be given.')
+    
+    username = cfg.get('username') or args.username
+    if username:
+        tagfiler.set_username(username)
+    else:
+        parser.error('Tagfiler username must be given.')
+    
+    password = cfg.get('password') or args.password
+    if password:
+        tagfiler.set_password(password)
+    else:
+        parser.error('Tagfiler password must be given.')
+    
+    outbox_model = models.Outbox()
+    outbox_model.set_tagfiler(tagfiler)
+
+    # Load roots from config file
+    roots = []
+    rootdirs = cfg.get('rootdirs', [])
+    for rootdir in rootdirs:
+        root = models.Root()
+        root.set_filepath(rootdir)
+        roots.append(root)
+    
+    # Load roots from args
     if args.rootdir:
         for rootdir in args.rootdir:
             root = models.Root()
             root.set_filepath(rootdir)
-            outbox_model.add_root(root) # temporarily add root
-        
-    # Set tagfiler settings
-    if args.url or args.username or args.password:
-        tagfiler = outbox_model.get_tagfiler()
-        if args.url:
-            tagfiler.set_url(args.url)
-        if args.username:
-            tagfiler.set_username(args.username)
-        if args.password:
-            tagfiler.set_password(args.password)
+            roots.append(root)
+
+    if len(roots) > 0:
+        outbox_model.set_roots(roots)
+    else:
+        parser.error('Must specify at least one root directory.')
+    
+    # Add include/exclusion patterns
+    if args.exclude:
+        for exclude in args.exclude:
+            expat = models.ExclusionPattern(pattern=exclude)
+            outbox_model.add_exclusion_pattern(expat)
+    
+    excludes = cfg.get('excludes', [])
+    for exclude in excludes:
+        expat = models.ExclusionPattern(pattern=exclude)
+        outbox_model.add_exclusion_pattern(expat)
+    
+    if args.include:
+        for include in args.include:
+            inpat = models.InclusionPattern(pattern=include)
+            outbox_model.add_inclusion_pattern(inpat)
+    
+    includes = cfg.get('includes', [])
+    for include in includes:
+        inpat = models.InclusionPattern(pattern=include)
+        outbox_model.add_inclusion_pattern(inpat)
+    
+    # Add path rules
+    if args.pathrule:
+        for pathrule in args.pathrule:
+            path_rule = models.PathRule(pattern=pathrule, apply='match', extract='template')
+            outbox_model.add_path_rule(path_rule)
+    
+    pathrules = cfg.get('pathrules', [])
+    for pathrule in pathrules:
+        print pathrule
+        path_rule = models.PathRule(pattern=pathrule, apply='match', extract='template')
+        outbox_model.add_path_rule(path_rule)
+
+    # Create or load state database
+    outbox_state_filepath = os.path.join(os.path.dirname(args.filename), "outbox_state.db")
+    state_dao = dao.OutboxStateDAO(None, outbox_state_filepath)
     
     # Dump the outbox to STDOUT
     if args.dump:
@@ -178,5 +244,5 @@ def main(args=None):
     outbox_manager.join()
     outbox_manager.terminate()
     
-    outbox_dao.close()
+    state_dao.close()
     return __EXIT_SUCCESS

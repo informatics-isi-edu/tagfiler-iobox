@@ -22,4 +22,6 @@ Main script to invoke the Tagfiler Outbox.
 from tagfiler.iobox.ui import systray
 
 if __name__ == "__main__":
+    print "Please Note: This is an experimental UI for Tagfiler"
+    print "In order to use this interface, you must have PyQt4 installed."
     systray.main()
