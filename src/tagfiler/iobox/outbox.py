@@ -82,7 +82,7 @@ class Outbox():
         
         
     def start(self):
-        """""Starts the Outbox."""
+        """Starts the Outbox."""
         logger.debug("Outbox:start")
         
         assert self._terminated != True

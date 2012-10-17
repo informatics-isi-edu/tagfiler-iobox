@@ -58,5 +58,5 @@ class Register(worker.Worker):
         logger.debug('Register:do_work: %s' % reg_file)
         self._client.add_subject(task)
         
-        self._state_dao.remove_registered_file_and_tags(reg_file)
+#        self._state_dao.remove_registered_file_and_tags(reg_file)
         work_done(reg_file) #TODO(schuler): or emit None, since register is the end of the pipeline

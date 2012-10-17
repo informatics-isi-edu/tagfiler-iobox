@@ -45,6 +45,7 @@ __LOGLEVEL = {0: logging.ERROR,
 __LOGLEVEL_MAX = 3
 __LOGLEVEL_DEFAULT = 0
 
+
 def create_temp_outbox_dao():
     """Creates an OutboxDAO using a temporary file.
     
@@ -61,6 +62,7 @@ def create_temp_outbox_dao():
     outbox_dao = dao.OutboxDAO(outbox_path)
     return (outbox_path, outbox_dao)
 
+
 def remove_temp_outbox_dao(outbox_path, outbox_dao):
     """Closes and removes an OutboxDAO backed by a temporary file.
     
@@ -74,6 +76,31 @@ def remove_temp_outbox_dao(outbox_path, outbox_dao):
         os.unlink(outbox_path)
     except:
         logger.warn("Could not remove temporary outbox dao %s" % outbox_path)
+
+
+def create_default_name_path_rule(endpoint_name):
+    path_rule = models.PathRule()
+    path_rule.set_pattern('^(?P<path>.*)')
+    path_rule.set_extract('template')
+    t1 = models.RERuleTemplate()
+    t1.set_template('file://%s\g<path>' % endpoint_name)
+    path_rule.add_template(t1)
+    tg1 = models.RERuleTag()
+    tg1.set_tag_name('name')
+    path_rule.add_tag(tg1)
+    return path_rule
+    
+def create_path_rule(**kwargs):
+    path_rule = models.PathRule()
+    path_rule.set_pattern('^(?P<path>.*)')
+    path_rule.set_extract('template')
+    t1 = models.RERuleTemplate()
+    t1.set_template('file://localhost\g<path>')
+    path_rule.add_template(t1)
+    tg1 = models.RERuleTag()
+    tg1.set_tag_name('name')
+    path_rule.add_tag(tg1)
+
 
 def main(args=None):
     """
@@ -114,9 +141,9 @@ def main(args=None):
                        help='exclusion pattern (regular expression)')
     
     # Tag rules option group
-    group = parser.add_argument_group(title='Tag rules')
-    group.add_argument('--pathrule', type=str, nargs='+',
-                       help='path tagging rule (regular expression)')
+#    group = parser.add_argument_group(title='Tag rules')
+#    group.add_argument('--pathrule', type=str, nargs='+',
+#                       help='path tagging rule (regular expression)')
     
     # Tagfiler option group
     group = parser.add_argument_group(title='Tagfiler options')
@@ -220,16 +247,18 @@ def main(args=None):
         outbox_model.add_inclusion_pattern(inpat)
     
     # Add path rules
-    if args.pathrule:
-        for pathrule in args.pathrule:
-            path_rule = models.PathRule(pattern=pathrule, apply='match', extract='template')
-            outbox_model.add_path_rule(path_rule)
+#   if args.pathrule:
+#       for pathrule in args.pathrule:
+#           path_rule = models.PathRule(pattern=pathrule, apply=u'match', extract=u'template')
+#           outbox_model.add_path_rule(path_rule)
     
-    pathrules = cfg.get('pathrules', [])
+    pathrules = cfg.get('pathrules', [{}])
     for pathrule in pathrules:
         print pathrule
-        path_rule = models.PathRule(pattern=pathrule, apply='match', extract='template')
+        path_rule = models.PathRule(pattern=pathrule["pattern"], apply=u'match', extract=u'template')
         outbox_model.add_path_rule(path_rule)
+
+    outbox_model.add_path_rule(create_default_name_path_rule("fygar.isi.edu"))
 
     # Create or load state database
     outbox_state_filepath = os.path.join(os.path.dirname(args.filename), "outbox_state.db")
