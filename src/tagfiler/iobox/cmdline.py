@@ -78,7 +78,10 @@ def remove_temp_outbox_dao(outbox_path, outbox_dao):
         logger.warn("Could not remove temporary outbox dao %s" % outbox_path)
 
 
-def create_default_name_path_rule(endpoint_name):
+def create_default_name_path_rule():
+    """Creates the path rule for the required 'name' tag."""
+    import socket
+    endpoint_name = socket.gethostname()
     path_rule = models.PathRule()
     path_rule.set_pattern('^(?P<path>.*)')
     path_rule.set_extract('template')
@@ -89,17 +92,20 @@ def create_default_name_path_rule(endpoint_name):
     tg1.set_tag_name('name')
     path_rule.add_tag(tg1)
     return path_rule
-    
+
+
 def create_path_rule(**kwargs):
+    """Creates a path rule."""
     path_rule = models.PathRule()
-    path_rule.set_pattern('^(?P<path>.*)')
-    path_rule.set_extract('template')
+    path_rule.set_pattern(kwargs.get('pattern'))
+    path_rule.set_extract(kwargs.get('extract'))
     t1 = models.RERuleTemplate()
-    t1.set_template('file://localhost\g<path>')
+    t1.set_template(kwargs.get('template'))
     path_rule.add_template(t1)
     tg1 = models.RERuleTag()
-    tg1.set_tag_name('name')
+    tg1.set_tag_name(kwargs.get('name'))
     path_rule.add_tag(tg1)
+    return path_rule
 
 
 def main(args=None):
@@ -140,11 +146,6 @@ def main(args=None):
     group.add_argument('--exclude', type=str, nargs='+',
                        help='exclusion pattern (regular expression)')
     
-    # Tag rules option group
-#    group = parser.add_argument_group(title='Tag rules')
-#    group.add_argument('--pathrule', type=str, nargs='+',
-#                       help='path tagging rule (regular expression)')
-    
     # Tagfiler option group
     group = parser.add_argument_group(title='Tagfiler options')
     group.add_argument('--url', dest='url', metavar='URL', 
@@ -173,13 +174,13 @@ def main(args=None):
     # Load configuration file, or create configuration based on arguments
     cfg = {}
     if os.path.exists(args.filename):
-        f = open(args.filename)
-        cfgstr = f.read()
+        f = open(args.filename, 'r')
         try:
-            cfg = json.loads(cfgstr)
+            cfg = json.load(f)
         except ValueError as e:
-            print 'Could not load configuration file.'
-            print e
+            logger.error('Could not load configuration file.')
+            logger.error(e)
+            return __EXIT_FAILURE
     
     # Load Tagfiler
     tagfiler = models.Tagfiler()
@@ -246,19 +247,14 @@ def main(args=None):
         inpat = models.InclusionPattern(pattern=include)
         outbox_model.add_inclusion_pattern(inpat)
     
-    # Add path rules
-#   if args.pathrule:
-#       for pathrule in args.pathrule:
-#           path_rule = models.PathRule(pattern=pathrule, apply=u'match', extract=u'template')
-#           outbox_model.add_path_rule(path_rule)
+    # Add the default 'name' tag path rule
+    outbox_model.add_path_rule(create_default_name_path_rule())
     
+    # Add optional path rules
     pathrules = cfg.get('pathrules', [{}])
     for pathrule in pathrules:
-        print pathrule
-        path_rule = models.PathRule(pattern=pathrule["pattern"], apply=u'match', extract=u'template')
+        path_rule = create_path_rule(**pathrule)
         outbox_model.add_path_rule(path_rule)
-
-    outbox_model.add_path_rule(create_default_name_path_rule("fygar.isi.edu"))
 
     # Create or load state database
     outbox_state_filepath = os.path.join(os.path.dirname(args.filename), "outbox_state.db")
