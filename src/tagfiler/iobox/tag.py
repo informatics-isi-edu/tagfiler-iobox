@@ -32,20 +32,35 @@ class Tag(worker.Worker):
         
         assert isinstance(state_dao, dao.OutboxStateDAO)
         assert isinstance(tag_director, rules.TagDirector)
-        self._state_dao = state_dao
+        
+        ###
+        #self._state_dao = state_dao
+        ###
+        
         self._rules = all_rules or []
         self._tag_director = tag_director
 
     def do_work(self, task, work_done):
-        assert isinstance(task, models.File)
+        assert isinstance(task, models.RegisterFile)
         fileobj = task
         logger.debug('do_work: File: %s' % fileobj)
-        reg_file = self._state_dao.register_file(fileobj) 
+        
+        ###
+        #reg_file = self._state_dao.register_file(fileobj) 
+        ###
+        reg_file = fileobj
 
         self._tag_director.tag_registered_file(self._rules, reg_file)
         
-#        for tag in reg_file.get_tags():
-#            self._state_dao.add_registered_file_tag(reg_file, tag)
+        ###
+        #for tag in reg_file.get_tags():
+        #    self._state_dao.add_registered_file_tag(reg_file, tag)
+        ###
+        
+        
+        ###
         reg_file.get_file().set_must_tag(False)
-#        self._state_dao.update_file(reg_file.get_file())
+        #self._state_dao.update_file(reg_file.get_file())
+        ###
+        
         work_done(reg_file)

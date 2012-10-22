@@ -178,26 +178,27 @@ def main(args=None):
         try:
             cfg = json.load(f)
         except ValueError as e:
-            logger.error('Could not load configuration file.')
-            logger.error(e)
+            logger.error('Malformed configuration file: %s', e)
             return __EXIT_FAILURE
+        else:
+            f.close()
     
     # Load Tagfiler
     tagfiler = models.Tagfiler()
     
-    url = cfg.get('url') or args.url
+    url = cfg.get('url', args.url)
     if url:
         tagfiler.set_url(url)
     else:
         parser.error('Tagfiler URL must be given.')
     
-    username = cfg.get('username') or args.username
+    username = cfg.get('username', args.username)
     if username:
         tagfiler.set_username(username)
     else:
         parser.error('Tagfiler username must be given.')
     
-    password = cfg.get('password') or args.password
+    password = cfg.get('password', args.password)
     if password:
         tagfiler.set_password(password)
     else:
@@ -251,7 +252,7 @@ def main(args=None):
     outbox_model.add_path_rule(create_default_name_path_rule())
     
     # Add optional path rules
-    pathrules = cfg.get('pathrules', [{}])
+    pathrules = cfg.get('pathrules', [])
     for pathrule in pathrules:
         path_rule = create_path_rule(**pathrule)
         outbox_model.add_path_rule(path_rule)
