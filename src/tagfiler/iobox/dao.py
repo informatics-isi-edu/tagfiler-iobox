@@ -21,23 +21,22 @@ import sqlite3
 import logging
 import os
 import time
-from tagfiler import iobox
 import models
 
-from logging import INFO
 
 logger = logging.getLogger(__name__)
 
 
 class DataDAO(object):
-    sql_source_dir = os.path.join(os.path.dirname(iobox.__file__), "sql/")
    
-    def __init__(self, db_filepath, **kwargs):
+    def __init__(self, db_filename, sql_filename):
         """Constructs a DAO instance, creating the database schema in the database file if necessary
         
-        Keyword arguments:
-        db_filepath -- filepath to use for the sqlite database
+        The 'db_filename' parameter is the filename of the database (a sqlite3 
+        database).
         
+        The 'sql_filename' parameter is the filename of the SQL DDL script to 
+        be used in order to create the corresponding database.
         """
         def _dict_factory(cursor, row):
             d = {}
@@ -45,22 +44,44 @@ class DataDAO(object):
                 d[col[0]] = row[idx]
             return d
     
-        self.db_filepath = db_filepath
-        # create outbox file if it doesn't exist
-        if not os.path.exists(self.db_filepath) and logger.isEnabledFor(INFO):
-            logger.info("Database file %s doesn't exist, creating." % self.db_filepath)
-        #self.db = sqlite3.connect(self.db_filepath, check_same_thread = False, isolation_level=None, detect_types=sqlite3.PARSE_DECLTYPES)
-        self.db = sqlite3.connect(self.db_filepath, detect_types=sqlite3.PARSE_DECLTYPES)
+        self.db_filename = db_filename
+        
+        # Test for existence of the state db
+        db_exists = os.path.exists(self.db_filename)
+            
+        # TODO(schuler): sort out the appropriate sqlite3 connection parameters:
+        #self.db = sqlite3.connect(self.db_filename, check_same_thread = False, isolation_level=None, detect_types=sqlite3.PARSE_DECLTYPES)
+        self.db = sqlite3.connect(self.db_filename, detect_types=sqlite3.PARSE_DECLTYPES)
         self.db.row_factory = _dict_factory
+        
+        # If db didn't exist (prior to sqlite connect), create database schema
+        if db_exists:
+            logger.info("Storing local state in %s." % self.db_filename)
+            
+            import tagfiler.iobox
+            sql_source_dir = os.path.join(os.path.dirname(tagfiler.iobox.__file__), "sql/")
+            source_file = os.path.join(sql_source_dir, sql_filename)
+            
+            cursor = self.db.cursor()
+            f = open(source_file, "r")
+            sql_stmts = str.split(f.read(), ";")
+            for s in sql_stmts:
+                logger.debug("Executing statement %s" % s)
+                cursor.execute(s)
+            f.close()
+            cursor.close()
+
 
     def __del__(self):
         self.close()
+
     
     def close(self):
         if self.db is not None:
             self.db.close()
             self.db = None
 
+    '''
     def _create_db_from_source(self, db, source_file):
             cursor = db.cursor()
             f = open(source_file, "r")
@@ -69,21 +90,15 @@ class DataDAO(object):
                 logger.debug("Executing statement %s" % s)
                 cursor.execute(s)
             f.close()
-            
             cursor.close()
-
+    '''
 
 class OutboxStateDAO(DataDAO):
-    """Data Access Object for a particular outbox's state.
+    """Data Access Object for a particular outbox's state."""
     
-    """
-    
-    def __init__(self, outbox, db_file):
-        super(OutboxStateDAO, self).__init__(db_file)
-        self.outbox = outbox
-        
-        # create the outbox instance if it doesn't exist
-        self._create_db_from_source(self.db, os.path.join(self.__class__.sql_source_dir, "outbox_instance.sql"))
+    def __init__(self, db_filename):
+        super(OutboxStateDAO, self).__init__(db_filename, "outbox_state.sql")
+                
 
     def find_scan_state(self, state_name):
         """Returns the scan state object for a given scan state name.

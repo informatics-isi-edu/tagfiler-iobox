@@ -228,6 +228,8 @@ def main(args=None):
     if args.dump:
         config.dump_outbox(outbox_model)
     
+    # TODO: need to get the real path
+    outbox_model.statedb = "/tmp/outbox_state.db"
     outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
     

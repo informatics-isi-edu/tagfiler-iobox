@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 class Dispatcher(Worker):
     """The worker thread for the 'Dispatcher' for the Tagfiler Outbox."""
     
-    def __init__(self, tasks, state_db_path, tagq, registerq):
+    def __init__(self, state_db, tasks, tagq, registerq):
         """Initializes the object."""
         super(Dispatcher, self).__init__(tasks, None)
-        self._state = OutboxStateDAO(state_db_path)
+        self._state = OutboxStateDAO(state_db)
         self._tagq = tagq
         self._regq = registerq
 
