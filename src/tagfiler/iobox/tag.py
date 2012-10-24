@@ -18,8 +18,9 @@ Implements the tagging stage of the Outbox pipeline.
 """
 
 import logging
-import worker, dao, models
+import worker, models
 from tagfiler.util import rules
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +28,9 @@ logger = logging.getLogger(__name__)
 class Tag(worker.Worker):
     """A worker for performing the tagging stage of the outbox pipeline."""
     
-    def __init__(self, tasks, results, state_dao, all_rules, tag_director):
+    def __init__(self, tasks, results, all_rules, tag_director):
         super(Tag, self).__init__(tasks, results)
-        
-        assert isinstance(state_dao, dao.OutboxStateDAO)
         assert isinstance(tag_director, rules.TagDirector)
-        
-        ###
-        #self._state_dao = state_dao
-        ###
-        
         self._rules = all_rules or []
         self._tag_director = tag_director
 
@@ -45,22 +39,12 @@ class Tag(worker.Worker):
         fileobj = task
         logger.debug('do_work: File: %s' % fileobj)
         
-        ###
-        #reg_file = self._state_dao.register_file(fileobj) 
-        ###
+        #TODO(schuler): clean up file/reg_file issue
         reg_file = fileobj
-
+        
         self._tag_director.tag_registered_file(self._rules, reg_file)
         
-        ###
-        #for tag in reg_file.get_tags():
-        #    self._state_dao.add_registered_file_tag(reg_file, tag)
-        ###
-        
-        
-        ###
+        #TODO(schuler): this probably isn't needed
         reg_file.get_file().set_must_tag(False)
-        #self._state_dao.update_file(reg_file.get_file())
-        ###
         
         work_done(reg_file)

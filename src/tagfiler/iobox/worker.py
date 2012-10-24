@@ -60,9 +60,10 @@ class Worker(threading.Thread):
         super(Worker, self).__init__()
         assert tasks is not None
         assert hasattr(tasks, 'get')
-        assert results is not None
-        assert hasattr(results, 'put')
-        assert hasattr(results, 'put_nowait')
+        if results is not None:
+            assert hasattr(results, 'put')
+            assert hasattr(results, 'put_nowait')
+            pass
         
         self.setDaemon(True)
         self._terminate = False

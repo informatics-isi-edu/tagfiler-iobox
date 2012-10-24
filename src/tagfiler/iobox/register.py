@@ -17,7 +17,7 @@
 Implements the registration stage of the Outbox.
 """
 
-import worker, dao, models
+import worker, models
 from tagfiler.util.http import TagfilerClient
 
 import logging
@@ -29,24 +29,16 @@ logger = logging.getLogger(__name__)
 class Register(worker.Worker):
     """The registration pipeline worker."""
     
-    def __init__(self, tasks, results, state_dao, tagfiler):
+    def __init__(self, tasks, results, tagfiler):
         """Constructor.
         
         Arguments:
             tasks: A queue of models.RegisterFile instances.
             results: An empty queue.
-            state_dao: the OutboxStateDAO instance.
             tagfiler: the models.Tagfiler instance.
         """
         super(Register, self).__init__(tasks, results)
-        
-        assert isinstance(state_dao, dao.OutboxStateDAO)
         assert isinstance(tagfiler, models.Tagfiler)
-        
-        ###
-        #self._state_dao = state_dao
-        ###
-        
         self._client = TagfilerClient(tagfiler)
 
     def do_work(self, task, work_done):
@@ -60,9 +52,4 @@ class Register(worker.Worker):
         reg_file = task
         logger.debug('Register:do_work: %s' % reg_file)
         self._client.add_subject(task)
-        
-        ###
-        #self._state_dao.remove_registered_file_and_tags(reg_file)
-        ###
-        
         work_done(reg_file) #TODO(schuler): or emit None, since register is the end of the pipeline

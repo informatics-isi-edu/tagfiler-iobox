@@ -19,11 +19,10 @@ Command-line interface for the Tagfiler Outbox.
 
 import os
 import logging
-import tempfile
 import argparse
 import json
 
-import dao, models, outbox, version
+import models, outbox, version
 import config # TODO: refactor this out, no crossrefs
 
 logger = logging.getLogger(__name__)
@@ -44,38 +43,6 @@ __LOGLEVEL = {0: logging.ERROR,
               3: logging.DEBUG}
 __LOGLEVEL_MAX = 3
 __LOGLEVEL_DEFAULT = 0
-
-
-def create_temp_outbox_dao():
-    """Creates an OutboxDAO using a temporary file.
-    
-    This is intended for command-line instances of the Outbox that do not have
-    a saved configuration.
-    
-    Returns a tuple of (outbox_path, outbox_dao) where 'outbox_path' is the
-    pathname to the temporary file that contains the Outbox database, and
-    'outbox_dao' is an instance of the OutboxDAO.
-    """
-    outbox_dir = tempfile.mkdtemp()
-    (outbox_file, outbox_path) = tempfile.mkstemp(dir=outbox_dir)
-    logger.debug("create_temp_outbox_dao: %s" % outbox_path)
-    outbox_dao = dao.OutboxDAO(outbox_path)
-    return (outbox_path, outbox_dao)
-
-
-def remove_temp_outbox_dao(outbox_path, outbox_dao):
-    """Closes and removes an OutboxDAO backed by a temporary file.
-    
-    Arguments:
-        'outbox_path': required pathname to the temporary file.
-        'outbox_dao': required instance of OutboxDAO.
-    """
-    logger.debug("remove_temp_outbox_dao: %s" % outbox_path)
-    outbox_dao.close()
-    try:
-        os.unlink(outbox_path)
-    except:
-        logger.warn("Could not remove temporary outbox dao %s" % outbox_path)
 
 
 def create_default_name_path_rule():
@@ -256,19 +223,16 @@ def main(args=None):
     for pathrule in pathrules:
         path_rule = create_path_rule(**pathrule)
         outbox_model.add_path_rule(path_rule)
-
-    # Create or load state database
-    outbox_state_filepath = os.path.join(os.path.dirname(args.filename), "outbox_state.db")
-    state_dao = dao.OutboxStateDAO(None, outbox_state_filepath)
     
     # Dump the outbox to STDOUT
     if args.dump:
         config.dump_outbox(outbox_model)
     
-    outbox_manager = outbox.Outbox(outbox_model, state_dao)
+    outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
+    
+    #TODO(schuler): This needs cleaning up, better way to end it
     outbox_manager.join()
     outbox_manager.terminate()
     
-    state_dao.close()
     return __EXIT_SUCCESS

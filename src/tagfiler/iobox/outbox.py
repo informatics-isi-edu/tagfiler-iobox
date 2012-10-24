@@ -17,7 +17,7 @@
 Implements Outbox management.
 """
 
-import worker, find, tag, register, dao, models
+import worker, find, tag, register, models, dispatcher
 from tagfiler.util import rules
 import logging
 
@@ -28,57 +28,42 @@ logger = logging.getLogger(__name__)
 class Outbox():
     """This class represents each Outbox and manages its operations."""
     
-    def __init__(self, outbox_model, state_dao):
+    def __init__(self, outbox_model):
         """Initializes the Outbox.
         
         The 'outbox_model' parameter is an instance of models.Outbox.
-        
-        The 'state_dao' parameter is an instance of dao.OutboxStateDAO.
         """
         logger.debug("Outbox:__init__")
         
         assert isinstance(outbox_model, models.Outbox)
-        assert isinstance(state_dao, dao.OutboxStateDAO)
         
         self._model = outbox_model
-        self._state_dao = state_dao
         self._terminated = False
         
         self._find_q = worker.WorkQueue()
         self._tag_q = worker.WorkQueue()
         self._register_q = worker.WorkQueue()
+        self._dispatch_q = worker.WorkQueue()
         
         # Populate Find's queue with the root directories.
         for root in self._model.get_roots():
             self._find_q.put(root)
             logger.debug("Added root %s to the Find queue" % str(root))
 
-        # Populate the Tag queue with any files that have been scanned
-        # but need to be tagged
-        for f in self._state_dao.find_files_to_tag():
-            self._tag_q.put(f)
-            logger.debug("Added file %s to the Tag queue" % str(f))
-
-        # Populate the Register queue with any files that have been registered
-        # and tagged in a previous session
-        for register_file in self._state_dao.find_tagged_files_to_register():
-            self._register_q.put(register_file)
-            logger.debug("Added register file %s to the Register queue" % str(register_file))
-
         # The pipeline consists of the Find, Tag, and Register workers with their
         # associated WorkQueues.
-        self._find = find.Find(self._find_q, self._tag_q, 
-                               self._state_dao,
+        self._find = find.Find(self._find_q, self._dispatch_q, 
                                self._model.get_inclusion_patterns(),
                                self._model.get_exclusion_patterns())
         self._tag = tag.Tag(self._tag_q, self._register_q, 
-                            self._state_dao,
                             self._model.get_all_rules(),
                             rules.TagDirector())
         self._register = register.Register(
                                     self._register_q, worker.WorkQueue(),
-                                    self._state_dao,
                                     self._model.get_tagfiler())
+        self._dispatcher = dispatcher.Dispatcher(self._dispatch_q, 
+                                                 self._tag_q,
+                                                 self._register_q)
         
         
     def start(self):
@@ -87,6 +72,7 @@ class Outbox():
         
         assert self._terminated != True
         
+        self._dispatcher.start()
         self._register.start()
         self._tag.start()
         self._find.start()
@@ -98,6 +84,7 @@ class Outbox():
         assert self._terminated != True
         
         self._terminated = True
+        self._dispatcher.terminate()
         self._find.terminate()
         self._tag.terminate()
         self._register.terminate()
@@ -106,10 +93,12 @@ class Outbox():
         """Indicates whether the Outbox has terminated."""
         return not (self._find.is_alive() or 
                     self._tag.is_alive() or 
-                    self._register.is_alive())
+                    self._register.is_alive() or
+                    self._dispatcher.is_alive())
         
     def join(self):
         """QuickNDirty thread synchronization. TODO: need to re-do this later."""
         self._find_q.join()
         self._tag_q.join()
         self._register_q.join()
+        self._dispatcher.join()

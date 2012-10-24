@@ -23,8 +23,7 @@ model objects.
 
 import tagfiler.iobox.worker as worker
 from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
-from tagfiler.iobox.models import Root, File, RegisterFile
-from tagfiler.iobox.dao import OutboxStateDAO
+from tagfiler.iobox.models import Root, RegisterFile
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Find(worker.Worker):
     """The worker thread for the 'Find' stage of the Tagfiler Outbox."""
     
-    def __init__(self, tasks, results, state_dao, inclusion_patterns=[], exclusion_patterns=[]):
+    def __init__(self, tasks, results, inclusion_patterns=[], exclusion_patterns=[]):
         """
         Initializes the Find class.
         
@@ -43,14 +42,6 @@ class Find(worker.Worker):
             exclusion_patterns: optional list of 'ExclusionPattern' objects
         """
         super(Find, self).__init__(tasks, results)
-        assert isinstance(state_dao, OutboxStateDAO)
-        
-        '''
-        ###
-        self._state_dao = state_dao
-        ###
-        '''
-        
         self._inclusion_patterns = inclusion_patterns
         self._exclusion_patterns = exclusion_patterns
         
@@ -63,39 +54,6 @@ class Find(worker.Worker):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
             filepath = create_uri_friendly_file_path(path, rfpath)
-            
             args = {'filepath': filepath, 'mtime': mtime, 'size': size}
             f = RegisterFile(**args)
             work_done(f)
-            
-            '''
-            ###
-            f = self._state_dao.find_file_by_path(filepath)
-            ###
-            
-            if f is None:
-                f = File(filepath=filepath, size=size, mtime=mtime, 
-                     user=user, group=group, must_tag=True)
-                
-                ###
-                self._state_dao.add_file(f)
-                ###
-                
-                work_done(f)
-            else:
-                # determine if the file has changed since the last scan
-                if size != f.get_size():
-                    f.set_size(size)
-                    f.set_mtime(mtime)
-                    f.set_must_tag(True)
-                    
-                    ###
-                    self._state_dao.update_file(f)
-                    ###
-                    
-                    work_done(f)
-                elif mtime > f.get_mtime():
-                    # TODO: compute checksum of file and compare.
-                    # If the checksums differ, update for tagging
-                    pass
-           '''
