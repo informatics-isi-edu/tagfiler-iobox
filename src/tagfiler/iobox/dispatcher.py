@@ -20,29 +20,25 @@ persistent checkpointing of the state of the pipeline. It then dispatches work
 to the next workers task queue.
 """
 
-from tagfiler.iobox import worker
+from tagfiler.iobox.worker import Worker
+from tagfiler.iobox.dao import OutboxStateDAO
 import logging
-
 
 logger = logging.getLogger(__name__)
 
 
-class Dispatcher(worker.Worker):
+class Dispatcher(Worker):
     """The worker thread for the 'Dispatcher' for the Tagfiler Outbox."""
     
-    def __init__(self, tasks, tagq, registerq):
+    def __init__(self, tasks, state_db_path, tagq, registerq):
         """Initializes the object."""
         super(Dispatcher, self).__init__(tasks, None)
+        self._state = OutboxStateDAO(state_db_path)
         self._tagq = tagq
         self._regq = registerq
 
-        # Create or load state database
-        #outbox_state_filepath = os.path.join(os.path.dirname(args.filename), "outbox_state.db")
-        #state_dao = dao.OutboxStateDAO(None, outbox_state_filepath)
-
     def __del__(self):
-        #statedao.close()
-        pass
+        self._state.close()
 
     def do_work(self, task, work_done):
         self._tagq.put(task)

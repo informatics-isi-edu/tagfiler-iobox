@@ -99,6 +99,6 @@ class Outbox():
     def join(self):
         """QuickNDirty thread synchronization. TODO: need to re-do this later."""
         self._find_q.join()
+        self._dispatcher.join()
         self._tag_q.join()
         self._register_q.join()
-        self._dispatcher.join()

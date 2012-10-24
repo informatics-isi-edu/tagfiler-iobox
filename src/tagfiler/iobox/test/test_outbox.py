@@ -39,7 +39,7 @@ class OutboxManagerTest(base.OutboxBaseTestCase):
     """Test of the Outbox Manager."""
     
     def runTest(self):
-        outbox_worker = outbox.Outbox(self.outbox_model, self.state_dao)
+        outbox_worker = outbox.Outbox(self.outbox_model)
         outbox_worker.start()
         outbox_worker.join() # TODO: Fix this Q&D synchronization!
         outbox_worker.terminate()

@@ -17,7 +17,6 @@
 Shared utilities for Outbox TestCases.
 """
 
-from tagfiler.iobox.cmdline import create_temp_outbox_dao, remove_temp_outbox_dao
 from tagfiler.iobox import models
 
 import unittest
@@ -34,9 +33,9 @@ def create_test_outbox():
     outbox = models.Outbox()
     outbox.set_name('test_outbox')
     tagfiler = models.Tagfiler()
-    tagfiler.set_url('https://jacoby.isi.edu/tagfiler')
-    tagfiler.set_username('smithd')
-    tagfiler.set_password('smithd')
+    tagfiler.set_url('https://curiosity.isi.edu/tagfiler')
+    tagfiler.set_username('demo')
+    tagfiler.set_password('demo')
     outbox.set_tagfiler(tagfiler)
     return outbox
 
@@ -112,24 +111,17 @@ class OutboxBaseTestCase(unittest.TestCase):
                                             self.get_numdirs(), 
                                             self.get_numfiles())
         
-        # Create the temporary OutboxDAO and Outbox
-        (self.outbox_path, self.outbox_dao) = create_temp_outbox_dao()
-        self.outbox_model = self.outbox_dao.add_outbox(create_test_outbox())
-        self.state_dao = self.outbox_dao.get_state_dao(self.outbox_model)
+        # Create the temporary Outbox
+        self.outbox_model = create_test_outbox()
         
         # Add the roots to the Outbox model object
         for rootdir in self.rootdirs:
             root = models.Root()
             root.set_filepath(rootdir)
-            self.outbox_dao.add_root_to_outbox(self.outbox_model, root)
+            self.outbox_model.add_root(root)
     
     def tearDown(self):
         """Subclasses should do class specific teardown before calling this 
         tearDown method."""
         # Remove the test directory tree
         remove_temp_dirtree(self.rootdirs)
-        
-        # Remove the temporary OutboxDAO
-        remove_temp_outbox_dao(self.state_dao.db_filepath, self.state_dao)
-        remove_temp_outbox_dao(self.outbox_path, self.outbox_dao)
-        
