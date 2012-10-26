@@ -235,13 +235,11 @@ def main(args=None):
     # Dump the outbox to STDOUT
     if args.dump:
         config.dump_outbox(outbox_model)
-    
-    # TODO: need to get the real path
+
+    # Now, create the outbox manager and let it run to completion
     outbox_model.state_db = state_db
     outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
-    
-    #TODO(schuler): This needs cleaning up, better way to end it
     outbox_manager.join()
     outbox_manager.terminate()
     
