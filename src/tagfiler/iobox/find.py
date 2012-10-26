@@ -23,7 +23,7 @@ model objects.
 
 import tagfiler.iobox.worker as worker
 from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
-from tagfiler.iobox.models import Root, RegisterFile
+from tagfiler.iobox.models import Root, File
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,14 +46,14 @@ class Find(worker.Worker):
         self._exclusion_patterns = exclusion_patterns
         
     def do_work(self, task, work_done):
-        assert isinstance(task, Root)
-        root = task # We expect task to be of type models.Root
-        path = root.get_filepath()
-        logger.debug('Find:do_work: path: %s' % path)
+        path = task.get_filepath()
+        logger.debug('Find:do_work: root: %s' % path)
         for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
-            filepath = create_uri_friendly_file_path(path, rfpath)
-            args = {'filepath': filepath, 'mtime': mtime, 'size': size}
-            f = RegisterFile(**args)
+            filename = create_uri_friendly_file_path(path, rfpath)
+            args = {'filename': filename, 'mtime': mtime, 'size': size, \
+                    'username': user, 'groupname': group}
+            f = File(**args)
+            f.status = File.FOUND
             work_done(f)

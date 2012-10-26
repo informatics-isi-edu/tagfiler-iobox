@@ -22,7 +22,10 @@ to the next workers task queue.
 
 from tagfiler.iobox.worker import Worker
 from tagfiler.iobox.dao import OutboxStateDAO
+from tagfiler.iobox.models import File
+
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +36,29 @@ class Dispatcher(Worker):
     def __init__(self, state_db, tasks, tagq, registerq):
         """Initializes the object."""
         super(Dispatcher, self).__init__(tasks, None)
-        self._state = OutboxStateDAO(state_db)
+        self._state = None
+        self._state_db = state_db
         self._tagq = tagq
         self._regq = registerq
 
-    def __del__(self):
-        self._state.close()
-
     def do_work(self, task, work_done):
-        self._tagq.put(task)
+        if self._state is None:
+            self._state = OutboxStateDAO(self._state_db)
+            
+        if task.status == File.FOUND:
+            task.status = None
+            seen = self._state.find_file(task.filename)
+            if not seen:
+                logger.debug("Not Seen: %s" % task)
+                self._state.add_file(task)
+                self._tagq.put(task)
+            elif task.mtime > seen.mtime:
+                logger.debug("Modified: %s" % task)
+                task.id = seen.id
+                self._state.update_file(task)
+                self._tagq.put(task) #TODO: send this to chksum queue
+            else:
+                logger.debug("Skipping: %s" % task)
+                
+        elif task.status == File.REGISTERED:
+            self._state.update_file(task)

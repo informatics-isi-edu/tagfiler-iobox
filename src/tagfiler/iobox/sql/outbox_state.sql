@@ -5,5 +5,7 @@ CREATE TABLE IF NOT EXISTS file (
     rtime FLOAT8,
     size INTEGER,
     checksum TEXT,
+    username TEXT,
+    groupname TEXT,
     must_tag BOOLEAN NOT NULL DEFAULT true
 );

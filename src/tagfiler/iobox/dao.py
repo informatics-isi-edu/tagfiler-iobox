@@ -20,7 +20,6 @@ The data access object (DAO) module.
 import sqlite3
 import logging
 import os
-import time
 import models
 
 
@@ -55,7 +54,7 @@ class DataDAO(object):
         self.db.row_factory = _dict_factory
         
         # If db didn't exist (prior to sqlite connect), create database schema
-        if db_exists:
+        if not db_exists:
             logger.info("Storing local state in %s." % self.db_filename)
             
             import tagfiler.iobox
@@ -71,27 +70,12 @@ class DataDAO(object):
             f.close()
             cursor.close()
 
-
-    def __del__(self):
-        self.close()
-
     
     def close(self):
         if self.db is not None:
             self.db.close()
             self.db = None
 
-    '''
-    def _create_db_from_source(self, db, source_file):
-            cursor = db.cursor()
-            f = open(source_file, "r")
-            sql_stmts = str.split(f.read(), ";")
-            for s in sql_stmts:
-                logger.debug("Executing statement %s" % s)
-                cursor.execute(s)
-            f.close()
-            cursor.close()
-    '''
 
 class OutboxStateDAO(DataDAO):
     """Data Access Object for a particular outbox's state."""
@@ -99,6 +83,39 @@ class OutboxStateDAO(DataDAO):
     def __init__(self, db_filename):
         super(OutboxStateDAO, self).__init__(db_filename, "outbox_state.sql")
                 
+    
+    def add_file(self, f):
+        """Adds a new file object to the database."""
+        p = (f.filename, f.mtime, f.size, f.username, f.groupname)
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO file (filename, mtime, size, username, groupname) VALUES (?, ?, ?, ?, ?)", p)
+        cursor.execute("SELECT last_insert_rowid() AS id")
+        f.id = cursor.fetchone()["id"]
+        cursor.close()
+        self.db.commit()
+
+    def update_file(self, f):
+        """Updates a file entry in the database."""
+        p = (f.filename, f.mtime, f.rtime, f.size, f.username, f.groupname, f.id)
+        cursor = self.db.cursor()
+        cursor.execute("UPDATE file SET filename = ?, mtime = ?, rtime = ?, size = ?, username = ?, groupname = ? WHERE id = ?", p)
+        cursor.close()
+        self.db.commit()
+    
+    def find_file(self, filename):
+        """Retrieves a file object from the database matching the filename."""
+        f = None
+        cursor = self.db.cursor()
+        p = (filename,)
+        cursor.execute("SELECT id, filename, mtime, rtime, size, checksum, username, groupname FROM file WHERE filename=?", p)
+        r = cursor.fetchone()
+        cursor.close()
+        if r is not None:
+            f = models.File(**r)
+        return f
+
+
+'''
 
     def find_scan_state(self, state_name):
         """Returns the scan state object for a given scan state name.
@@ -181,32 +198,6 @@ class OutboxStateDAO(DataDAO):
         cursor.close()
         if r is not None:
             f = models.File(**r)
-        return f
-    
-    def add_file(self, f):
-        """Adds a new file object to the database.
-        
-        Keyword arguments:
-        f -- models.File object
-        
-        """
-        assert isinstance(f, models.File)
-        logger.debug("OutboxStateDAO:add_file: %s" % str(f))
-        #cursor = self.db.cursor()
-        #p = (f.get_filepath(),)
-        #cursor.execute("SELECT id FROM file WHERE filepath=?", p)
-        #r = cursor.fetchone()
-        #cursor.close()
-        #if r is None:
-        p = (f.get_filepath(), f.get_mtime(), f.get_size(), f.get_checksum(), f.get_must_tag())
-        cursor = self.db.cursor()
-        cursor.execute("INSERT INTO file (filepath, mtime, size, checksum, must_tag) VALUES (?, ?, ?, ?, ?)", p)
-        
-        cursor.execute("SELECT last_insert_rowid() AS id")
-        f.set_id(cursor.fetchone()["id"])
-        cursor.close()
-        #else:
-        #    f.set_id(r["id"])
         return f
 
     def add_file_to_scan(self, scan, f):
@@ -406,3 +397,5 @@ class OutboxStateDAO(DataDAO):
         cursor.execute("DELETE FROM register_file WHERE id=?", p)
         
         registered_file.set_id(None)
+        
+'''

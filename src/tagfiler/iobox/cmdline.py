@@ -20,6 +20,7 @@ Command-line interface for the Tagfiler Outbox.
 import os
 import logging
 import argparse
+import tempfile
 import json
 
 import models, outbox, version
@@ -150,6 +151,13 @@ def main(args=None):
         else:
             f.close()
     
+    # Load name and create state db filename
+    name = cfg.get('name', 'outbox').strip()
+    dirname = os.path.dirname(args.filename)
+    if not os.path.exists(dirname):
+        dirname = tempfile.gettempdir()
+    state_db = os.path.join(dirname, name+".db")
+
     # Load Tagfiler
     tagfiler = models.Tagfiler()
     
@@ -229,7 +237,7 @@ def main(args=None):
         config.dump_outbox(outbox_model)
     
     # TODO: need to get the real path
-    outbox_model.statedb = "/tmp/outbox_state.db"
+    outbox_model.state_db = state_db
     outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
     

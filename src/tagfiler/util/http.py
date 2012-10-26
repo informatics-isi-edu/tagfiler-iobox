@@ -73,22 +73,22 @@ class TagfilerClient(object):
             raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
         return resp
     
-    def add_subjects(self, register_files):
+    def add_subjects(self, fileobjs):
         """Registers a list of files and tags in tagfiler using a single request.
         
         Keyword arguments:
         
-        register_files -- the list of register files objects 
+        fileobjs -- the list of register files objects 
         
         """
         parsed_table = []
         tag_names = []
-        for register_file in register_files:
+        for fileobj in fileobjs:
             # name is a required tag
-            if register_file.get_tag("name") is None or len(register_file.get_tag("name")) == 0:
-                raise ValueError("Register file %s must have its 'name' tag set." % unicode(register_file))
+            if fileobj.get_tag("name") is None or len(fileobj.get_tag("name")) == 0:
+                raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
             parsed_dict = {}
-            for tag in register_file.get_tags():
+            for tag in fileobj.get_tags():
                 tag_list = parsed_dict.get(tag.get_tag_name(), [])
                 tag_list.append(tag.get_tag_value())
                 parsed_dict[tag.get_tag_name()] = tag_list
@@ -106,24 +106,24 @@ class TagfilerClient(object):
         self._send_request(connection, "PUT", bulkurl, payload, headers)
         connection.close()
 
-    def add_subject(self, register_file):
+    def add_subject(self, fileobj):
         """Registers a single file in tagfiler
         
         Keyword arguments:
-        register_file -- models.RegisterFile object with tags
+        fileobj -- models.File object with tags
         """
-        assert isinstance(register_file, models.RegisterFile)
+        assert isinstance(fileobj, models.File)
 
         # name is a required tag
-        if register_file.get_tag("name") is None or len(register_file.get_tag("name")) == 0:
-            raise ValueError("Register file %s must have its 'name' tag set." % unicode(register_file))
+        if fileobj.get_tag("name") is None or len(fileobj.get_tag("name")) == 0:
+            raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
 
         # Remove the name tag from the file tags, since this is specified outside the query string
         tag_pairs = []
-        for tag in register_file.get_tags():
+        for tag in fileobj.get_tags():
             if tag.get_tag_name() != "name":
                 tag_pairs.append("%s=%s" % (self._safequote(tag.get_tag_name()), self._safequote(tag.get_tag_value())))
-        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(register_file.get_tag("name")[0].get_tag_value()), "&".join(tag_pairs))
+        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(fileobj.get_tag("name")[0].get_tag_value()), "&".join(tag_pairs))
         connection = self._create_connection()
         login_cookie = self._login(connection)
         headers = {}

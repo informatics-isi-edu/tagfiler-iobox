@@ -123,15 +123,15 @@ class PathRuleProcessor(RERuleProcessor):
         return super(PathRuleProcessor, self).analyze(file_path)
 
 class TagDirector(object):
-    def tag_registered_file(self, rules, registered_file):
+    def tag_registered_file(self, rules, fileobj):
         for rule in rules:
-            tag_dict = self.get_rule_processor(rule).analyze(registered_file.get_file().get_filepath())
+            tag_dict = self.get_rule_processor(rule).analyze(fileobj.filename)
             for k,v_list in tag_dict.iteritems():
                 for v in v_list:
                     t = RegisterTag()
                     t.set_tag_name(k)
                     t.set_tag_value(v)
-                    registered_file.add_tag(t)
+                    fileobj.add_tag(t)
 
     def get_rule_processor(self, rule):
         if isinstance(rule, PathRule):

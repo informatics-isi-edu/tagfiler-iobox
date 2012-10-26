@@ -5,7 +5,7 @@ Created on Sep 19, 2012
 '''
 import unittest
 import logging
-from tagfiler.iobox.models import File, RegisterFile
+from tagfiler.iobox.models import File
 from tagfiler.util.rules import PathRuleProcessor, TagDirector
 from tagfiler.iobox.test import base
 from tagfiler.iobox.test.base import create_date_and_study_path_rule
@@ -36,15 +36,13 @@ class TestPathRuleProcessor(unittest.TestCase):
         
 class TestTagDirector(unittest.TestCase):
     def testRun(self):
-        register_file = RegisterFile()
         f = File()
         f.set_filepath("/opt/data/studies/2012-02-23/session1/myfile.jpg")
-        register_file.set_file(f)
         
         rules = [create_date_and_study_path_rule(), create_default_name_path_rule(socket.gethostname())]
-        TagDirector().tag_registered_file(rules, register_file)
-        assert len(register_file.get_tags()) == 3
-        for t in register_file.get_tags():
+        TagDirector().tag_registered_file(rules, f)
+        assert len(f.get_tags()) == 3
+        for t in f.get_tags():
             if t.get_tag_name() == "date":
                 assert t.get_tag_value() == '2012-02-23'
             elif t.get_tag_name() == "session":

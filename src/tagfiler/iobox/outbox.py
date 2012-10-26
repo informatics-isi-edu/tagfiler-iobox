@@ -59,9 +59,9 @@ class Outbox():
                             self._model.get_all_rules(),
                             rules.TagDirector())
         self._register = register.Register(
-                                    self._register_q, worker.WorkQueue(),
+                                    self._register_q, self._dispatch_q,
                                     self._model.get_tagfiler())
-        self._dispatcher = dispatcher.Dispatcher(self._model.statedb,
+        self._dispatcher = dispatcher.Dispatcher(self._model.state_db,
                                                  self._dispatch_q, 
                                                  self._tag_q,
                                                  self._register_q)

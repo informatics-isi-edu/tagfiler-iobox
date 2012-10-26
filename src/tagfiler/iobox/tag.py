@@ -35,16 +35,8 @@ class Tag(worker.Worker):
         self._tag_director = tag_director
 
     def do_work(self, task, work_done):
-        assert isinstance(task, models.RegisterFile)
+        assert isinstance(task, models.File)
         fileobj = task
         logger.debug('do_work: File: %s' % fileobj)
-        
-        #TODO(schuler): clean up file/reg_file issue
-        reg_file = fileobj
-        
-        self._tag_director.tag_registered_file(self._rules, reg_file)
-        
-        #TODO(schuler): this probably isn't needed
-        reg_file.get_file().set_must_tag(False)
-        
-        work_done(reg_file)
+        self._tag_director.tag_registered_file(self._rules, fileobj)
+        work_done(fileobj)

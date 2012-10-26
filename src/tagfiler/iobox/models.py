@@ -12,6 +12,7 @@ class Outbox(object):
     def __init__(self, **kwargs):
         self.id = kwargs.get("outbox_id")
         self.name = kwargs.get("outbox_name")
+        self.state_db = kwargs.get("state_db")
         self.endpoint_name = kwargs.get("endpoint_name", socket.getfqdn().lower())
         self.tagfiler = Tagfiler(**kwargs)
         self.roots = []
@@ -320,50 +321,53 @@ class RERuleRewrite(RERuleComponent):
         self.rewrite_template = rewrite_template
 
 
-# Instance classes
 class File(object):
     """File statistics that describe a file retrieved during scan or register.
-    
     """
+    
+    FOUND       = 1
+    REGISTERED  = 2
+    
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
-        self.filepath = kwargs.get("filepath")
+        self.filename = kwargs.get("filename")
         self.mtime = kwargs.get("mtime")
+        self.rtime = kwargs.get("rtime")
         self.size = kwargs.get("size")
         self.checksum = kwargs.get("checksum")
-        self.must_tag = kwargs.get("must_tag", True)
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-    def set_filepath(self, filepath):
-        self.filepath = filepath
-    def get_filepath(self):
-        return self.filepath
-    def set_mtime(self, mtime):
-        self.mtime = mtime
-    def get_mtime(self):
-        return self.mtime
-    def set_size(self, size):
-        self.size = size
-    def get_size(self):
-        return self.size
-    def set_checksum(self, checksum):
-        self.checksum = checksum
-    def get_checksum(self):
-        return self.checksum
-    def set_must_tag(self, must_tag):
-        self.must_tag = must_tag
-    def get_must_tag(self):
-        return self.must_tag
+        self.username = kwargs.get("username")
+        self.groupname = kwargs.get("groupname")
+        self.tags = kwargs.get("tags", [])
+        self.status = kwargs.get("status")
+        
+    def get_tags(self):
+        return self.tags
+    def set_tags(self, tags):
+        self.tags = tags
+    def add_tag(self, tag):
+        self.tags.append(tag)
+    def get_tag(self, tag_name):
+        tag = []
+        for t in self.tags:
+            if t.get_tag_name() == tag_name:
+                tag.append(t)
+        return tag
 
     def __str__(self):
-        return self.filepath
+        s = self.filename
+        s += " <%s> " % self.id
+        s += " (%s %s %s %s %s) [" % (self.mtime, self.rtime, self.size, 
+                                      self.username, self.groupname)
+        for t in self.tags:
+            s += "%s=%s, " % (t.get_tag_name(), t.get_tag_value())
+        s += "]"
+        return s
+
 
 class ScanState(object):
     """Current state of a scan.
-    
     """
+    
     def __init__(self, **kwargs):
         self.id = kwargs.get("scan_state_id")
         self.state = kwargs.get("state")
@@ -432,6 +436,7 @@ class RegisterTag(object):
     def set_tag_value(self, tag_value):
         self.tag_value = tag_value
 
+'''
 class RegisterFile(object):
     """File that should be registered in tagfiler
     
@@ -473,6 +478,7 @@ class RegisterFile(object):
             s += "%s=%s, " % (t.get_tag_name(), t.get_tag_value())
         s += "]"
         return s
+'''
 
 def create_default_name_path_rule(endpoint_name):
     path_rule = PathRule()
