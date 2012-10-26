@@ -17,7 +17,7 @@
 Implements Outbox management.
 """
 
-import worker, find, tag, register, models, dispatcher
+import worker, find, cksum, tag, register, models, dispatcher
 from tagfiler.util import rules
 import logging
 
@@ -41,6 +41,7 @@ class Outbox():
         self._terminated = False
         
         self._find_q = worker.WorkQueue()
+        self._sum_q = worker.WorkQueue()
         self._tag_q = worker.WorkQueue()
         self._register_q = worker.WorkQueue()
         self._dispatch_q = worker.WorkQueue()
@@ -55,14 +56,20 @@ class Outbox():
         self._find = find.Find(self._find_q, self._dispatch_q, 
                                self._model.get_inclusion_patterns(),
                                self._model.get_exclusion_patterns())
+        
+        self._sum = cksum.Checksum(self._sum_q, self._dispatch_q)
+        
         self._tag = tag.Tag(self._tag_q, self._register_q, 
                             self._model.get_all_rules(),
                             rules.TagDirector())
+        
         self._register = register.Register(
                                     self._register_q, self._dispatch_q,
                                     self._model.get_tagfiler())
+        
         self._dispatcher = dispatcher.Dispatcher(self._model.state_db,
                                                  self._dispatch_q, 
+                                                 self._sum_q,
                                                  self._tag_q,
                                                  self._register_q)
         
@@ -76,6 +83,7 @@ class Outbox():
         self._dispatcher.start()
         self._register.start()
         self._tag.start()
+        self._sum.start()
         self._find.start()
 
     def terminate(self):
@@ -85,14 +93,16 @@ class Outbox():
         assert self._terminated != True
         
         self._terminated = True
-        self._dispatcher.terminate()
         self._find.terminate()
+        self._dispatcher.terminate()
+        self._sum.terminate()
         self._tag.terminate()
         self._register.terminate()
         
     def is_terminated(self):
         """Indicates whether the Outbox has terminated."""
         return not (self._find.is_alive() or 
+                    self._sum.is_alive() or
                     self._tag.is_alive() or 
                     self._register.is_alive() or
                     self._dispatcher.is_alive())
@@ -100,6 +110,10 @@ class Outbox():
     def join(self):
         """QuickNDirty thread synchronization. TODO: need to re-do this later."""
         self._find_q.join()
-        self._dispatcher.join()
+        self._dispatch_q.join()
+        self._sum_q.join()
+        self._dispatch_q.join()
         self._tag_q.join()
+        self._dispatch_q.join()
         self._register_q.join()
+        self._dispatch_q.join()

@@ -42,5 +42,4 @@ class Register(Worker):
         assert isinstance(task, File)
         self._client.add_subject(task)
         task.rtime = time.time()
-        task.status = File.REGISTERED
         work_done(task)

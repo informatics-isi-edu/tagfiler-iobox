@@ -86,9 +86,9 @@ class OutboxStateDAO(DataDAO):
     
     def add_file(self, f):
         """Adds a new file object to the database."""
-        p = (f.filename, f.mtime, f.size, f.username, f.groupname)
+        p = (f.filename, f.mtime, f.size, f.checksum, f.username, f.groupname)
         cursor = self.db.cursor()
-        cursor.execute("INSERT INTO file (filename, mtime, size, username, groupname) VALUES (?, ?, ?, ?, ?)", p)
+        cursor.execute("INSERT INTO file (filename, mtime, size, checksum, username, groupname) VALUES (?, ?, ?, ?, ?, ?)", p)
         cursor.execute("SELECT last_insert_rowid() AS id")
         f.id = cursor.fetchone()["id"]
         cursor.close()
@@ -96,9 +96,9 @@ class OutboxStateDAO(DataDAO):
 
     def update_file(self, f):
         """Updates a file entry in the database."""
-        p = (f.filename, f.mtime, f.rtime, f.size, f.username, f.groupname, f.id)
+        p = (f.filename, f.mtime, f.rtime, f.size, f.checksum, f.username, f.groupname, f.id)
         cursor = self.db.cursor()
-        cursor.execute("UPDATE file SET filename = ?, mtime = ?, rtime = ?, size = ?, username = ?, groupname = ? WHERE id = ?", p)
+        cursor.execute("UPDATE file SET filename = ?, mtime = ?, rtime = ?, size = ?, checksum = ?, username = ?, groupname = ? WHERE id = ?", p)
         cursor.close()
         self.db.commit()
     

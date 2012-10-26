@@ -14,28 +14,28 @@
 # limitations under the License.
 #
 """
-Implements the tagging stage of the Outbox pipeline.
+Implements the checksum stage of the Outbox.
 """
 
+from worker import Worker
+from models import File
+from tagfiler.util import files
+
 import logging
-import worker, models
-from tagfiler.util import rules
 
 
 logger = logging.getLogger(__name__)
 
 
-class Tag(worker.Worker):
-    """A worker for performing the tagging stage of the outbox pipeline."""
-    
-    def __init__(self, tasks, results, all_rules, tag_director):
-        super(Tag, self).__init__(tasks, results)
-        assert isinstance(tag_director, rules.TagDirector)
-        self._rules = all_rules or []
-        self._tag_director = tag_director
+class Checksum(Worker):
+    """The checksum pipeline worker."""
 
     def do_work(self, task, work_done):
-        assert isinstance(task, models.File)
-        logger.debug('Tag:do_work: File: %s' % task)
-        self._tag_director.tag_registered_file(self._rules, task)
+        logger.debug('Checksum:do_work: %s' % task)
+        assert isinstance(task, File)
+        checksum = files.sha256sum(task.filename) #TODO: this needs to be interuptable
+        if task.status == File.COMPUTE:
+            task.checksum = checksum
+        else:
+            task.compare = checksum
         work_done(task)

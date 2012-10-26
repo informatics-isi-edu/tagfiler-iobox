@@ -23,7 +23,7 @@ model objects.
 
 import tagfiler.iobox.worker as worker
 from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
-from tagfiler.iobox.models import Root, File
+from tagfiler.iobox.models import File
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,5 +55,4 @@ class Find(worker.Worker):
             args = {'filename': filename, 'mtime': mtime, 'size': size, \
                     'username': user, 'groupname': group}
             f = File(**args)
-            f.status = File.FOUND
             work_done(f)
