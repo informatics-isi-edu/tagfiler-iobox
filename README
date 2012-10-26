@@ -1,0 +1,67 @@
+Tagfiler Outbox
+~~~~~~~~~~~~~~~
+Tagfiler Outbox is a client-side utility for registering directory tree 
+contents and metadata as tags in a Tagfiler service.
+
+System Requirements
+~~~~~~~~~~~~~~~~~~~
+Tagfiler Outbox is a python based utility. You must have a Python interpreter 
+installed on your system. Python version 2.6+ is required. We have tested on 
+Mac OS X 10.7, Windows 7, CentOS 5, and Fedora Core 11.
+
+Installation
+~~~~~~~~~~~~
+To install from the Subversion repository :
+
+  0. Check out the code from SVN from the following location
+     https://svn2.misd.isi.edu/repos/tagfiler/tagfiler-iobox/trunk.
+
+  1. Continue with the following instructions...
+
+To install from a source distribution:
+
+  2. cd into the source directory.
+
+  3. Run 'python setup.py install'. You may chose the installation directory 
+     using the --prefix=/path/to/installation/directory option. Note that you
+     may need to install as 'superuser' using sudo on Linux and Mac OS X if
+     you install in the default location.
+
+Configuration
+~~~~~~~~~~~~~
+By default, Tagfile Outbox will look for a configuration file in:
+  ${HOME}/.tagfiler/outbox.json
+
+The following is a sample configuration file.
+
+--DO NOT INCLUDE THIS LINE--
+{
+    "url": "http://curiosity.isi.edu/tagfiler",
+    "username": "demo",
+    "password": "demo",
+    "rootdirs": [
+        "/tmp/fubar"
+    ],
+    "includes": [
+    ],
+    "excludes": [
+    ],
+    "pathrules": [
+        {
+            "name": "loopback",
+            "pattern": "^(?P<path>.*)",
+            "apply": "match",
+            "extract": "template",
+            "template": "file://localhost\\g<path>"
+        }
+    ]
+}
+--DO NOT INCLUDE THIS LINE--
+
+Usage
+~~~~~
+Use the following command to run the Tagfiler Outbox:
+  tagfiler-outbox
+
+For help on command line arguments, use:
+  tagfiler-outbox --help
