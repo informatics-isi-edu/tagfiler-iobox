@@ -18,8 +18,7 @@ Implements the registration stage of the Outbox.
 """
 
 from worker import Worker
-from models import Tagfiler
-from models import File
+from models import Tagfiler, File
 from tagfiler.util.http import TagfilerClient
 
 import time
@@ -36,6 +35,13 @@ class Register(Worker):
         super(Register, self).__init__(tasks, results)
         assert isinstance(tagfiler, Tagfiler)
         self._client = TagfilerClient(tagfiler)
+        
+    def on_start(self):
+        self._client.connect()
+        self._client.login()
+    
+    def on_terminate(self):
+        self._client.close()
 
     def do_work(self, task, work_done):
         logger.debug('Register:do_work: %s' % task)
