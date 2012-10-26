@@ -17,14 +17,16 @@
 Command-line interface for the Tagfiler Outbox.
 """
 
+import models
+import outbox
+import version
+
 import os
 import logging
 import argparse
 import tempfile
 import json
 
-import models, outbox, version
-import config # TODO: refactor this out, no crossrefs
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +90,6 @@ def main(args=None):
 
     # General options
     parser.add_argument('--version', action='version', version=__VER)
-    parser.add_argument('-p', '--print', dest='dump', action='store_true', 
-                        help='print the configuration values')
     parser.add_argument('-n', '--name', type=str, default='default',
                         help='name of the outbox to configure')
     # Use home directory as default location for outbox.conf
@@ -137,7 +137,7 @@ def main(args=None):
     else:
         verbosity = args.verbose if args.verbose < __LOGLEVEL_MAX else __LOGLEVEL_MAX
         logging.basicConfig(level=__LOGLEVEL[verbosity])
-        logger.debug(args)
+        logger.debug("args: %s" % args)
     
     # Load configuration file, or create configuration based on arguments
     cfg = {}
@@ -145,6 +145,7 @@ def main(args=None):
         f = open(args.filename, 'r')
         try:
             cfg = json.load(f)
+            logger.debug("config: %s" % cfg)
         except ValueError as e:
             logger.error('Malformed configuration file: %s', e)
             return __EXIT_FAILURE
@@ -231,10 +232,6 @@ def main(args=None):
     for pathrule in pathrules:
         path_rule = create_path_rule(**pathrule)
         outbox_model.add_path_rule(path_rule)
-    
-    # Dump the outbox to STDOUT
-    if args.dump:
-        config.dump_outbox(outbox_model)
 
     # Now, create the outbox manager and let it run to completion
     outbox_model.state_db = state_db

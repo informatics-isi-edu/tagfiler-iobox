@@ -32,8 +32,9 @@ class CmdlineTest(unittest.TestCase):
 
     def setUp(self):
         self.rootdirs = base.create_temp_dirtree(1, 1, 5)
-        self.args = ['https://jacoby.isi.edu/tagfiler', 'smithd', 'smithd'] #TODO(rs):need to fix
-        self.args.extend(self.rootdirs)
+        self.args = ['--url=https://curiosity.isi.edu/tagfiler', '--username=demo', '--password=demo'] #TODO(rs):need to fix
+        for rootdir in self.rootdirs:
+            self.args.extend(['--rootdir=%s' % rootdir])
 
     def tearDown(self):
         base.remove_temp_dirtree(self.rootdirs)
@@ -42,17 +43,17 @@ class CmdlineTest(unittest.TestCase):
         cmdline.main(self.args)
 
     def testExclude(self):
-        args = ['--exclude=abc'] #TODO(rs): placeholder
+        args = ['--exclude=.*'] #TODO(rs): placeholder
         args.extend(self.args)
         cmdline.main(args)
         
     def testInclude(self):
-        args = ['--include=xyz'] #TODO(rs): placeholder
+        args = ['--include=.*'] #TODO(rs): placeholder
         args.extend(self.args)
         cmdline.main(args)
 
     def testIncludeExclude(self):
-        args = ['--exclude=abc', '--include=xyz'] #TODO(rs): placeholder
+        args = ['--exclude=.*', '--include=.*'] #TODO(rs): placeholder
         args.extend(self.args)
         cmdline.main(args)
 

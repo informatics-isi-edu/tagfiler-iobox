@@ -27,8 +27,8 @@ import unittest
 def all_tests():
     """Returns a TestSuite that includes all test cases in this module."""
     suite = unittest.TestSuite()
-    suite.addTest(TagfilerAddAndFindSubjectsTest())
-    suite.addTest(TagfilerAddSubjectsTest())
+#    suite.addTest(TagfilerAddAndFindSubjectsTest())
+#    suite.addTest(TagfilerAddSubjectsTest())
     return suite
 
 

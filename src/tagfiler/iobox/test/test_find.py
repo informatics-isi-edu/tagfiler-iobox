@@ -57,7 +57,7 @@ class FindTest(base.OutboxBaseTestCase):
             root.set_filepath(rootdir)
             find_q.put(root)
         
-        find_worker = find.Find(find_q, tag_q, self.state_dao)
+        find_worker = find.Find(find_q, tag_q)
         find_worker.start()
         find_q.join()
         find_worker.terminate()
