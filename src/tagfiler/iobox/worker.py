@@ -85,17 +85,33 @@ class Worker(threading.Thread):
             # because it is really looking for the _terminate flag.
             pass
     
+    def on_start(self):
+        """Called during the start of operations.
+        
+        This method may be overriden by subclasses that want to perform some 
+        one-time initialization before work begins.
+        """
+        pass
+    
     def do_work(self, task, work_done):
         """Called whenever a new task is available.
         
-        This is the only method that should be overridden by subclasses. When 
-        the task is done call the work_done function, giving it 1 argument, the
-        result object to be passed back from this worker.
+        This method should be overridden by subclasses. When the task is done 
+        call the work_done function, giving it 1 argument, the result object 
+        to be passed back from this worker.
         
         Note that is the Worker subclass performs a long running operation 
         during the call to do_work, it should check on the terminate flag 
         frequently. If terminate is True, the do_work should immediately clean 
         up and terminate.
+        """
+        pass
+    
+    def on_terminate(self):
+        """Called during termination.
+        
+        This method may be overriden by subclasses that want to perform some
+        one-time cleanup before the thread exits.
         """
         pass
     
@@ -115,6 +131,7 @@ class Worker(threading.Thread):
         """Subclasses of Worker should not override this method."""
         
         logger.debug('run:BEGIN')
+        self.on_start()
 
         while not self._terminate:
             task = self._tasks.get()
@@ -123,4 +140,5 @@ class Worker(threading.Thread):
             self.do_work(task, self._work_done)
             self._tasks.task_done()
 
+        self.on_terminate()
         logger.debug('run:END')
