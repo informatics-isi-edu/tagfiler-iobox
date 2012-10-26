@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 """
-Tagfiler http client.
+Tagfiler client.
 """
 
 from tagfiler.iobox.models import Tagfiler, File
@@ -22,29 +22,22 @@ from tagfiler.iobox.models import Tagfiler, File
 import urlparse
 import urllib
 import logging
-from httplib import HTTPConnection, HTTPSConnection, OK, CREATED, ACCEPTED, NO_CONTENT, HTTPException, SEE_OTHER
+from httplib import HTTPConnection, HTTPSConnection, HTTPException
+from httplib import OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER
+
+try:
+    import simplejson #@UnresolvedImport
+    json = simplejson
+except:
+    import json as imported_json
+    json = imported_json
+
 
 logger = logging.getLogger(__name__)
 
-try:
-    import simplejson
-    
-    jsonWriter = simplejson.dumps
-    jsonReader = simplejson.loads
-    jsonFileReader = simplejson.load
-except:
-    import json
-
-    if hasattr(json, 'dumps'):
-        jsonWriter = json.dumps
-        jsonReader = json.loads
-        jsonFileReader = json.load
-    else:
-        raise RuntimeError('Could not configure JSON library.')
 
 class TagfilerClient(object):
     """Web service client used to interact with the Tagfiler REST service.
-    
     """
     def __init__(self, config, **kwargs):
         """Initializes the object.
@@ -127,7 +120,7 @@ class TagfilerClient(object):
                     if tag.get_tag_name() not in tag_names:
                         tag_names.append(tag.get_tag_name())
             parsed_table.append(parsed_dict)
-        payload = jsonWriter(parsed_table)
+        payload = json.dumps(parsed_table)
         bulkurl = '%s/subject/name(%s)' % (self.baseuri, ';'.join([ self._safequote(tag) for tag in tag_names ]))
         headers = {}
         headers["Content-Type"] = "application/json"
@@ -170,7 +163,7 @@ class TagfilerClient(object):
         headers["Accept"] = "application/json"
         try:
             resp = self._send_request(self.connection, "GET", url, headers=headers)
-            subject = jsonReader(resp.read())
+            subject = json.loads(resp.read())
         except HTTPException,e:
             logger.error(e)
         return subject
