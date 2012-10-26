@@ -77,7 +77,7 @@ class TagfilerClient(object):
         #TODO: throw exception if connection is None!
         headers = {}
         headers["Content-Type"] = "application/x-www-form-urlencoded"
-        resp = self._send_request(self.connection, "POST", "/webauthn/login", 
+        resp = self._send_request("POST", "/webauthn/login", 
                                   "username=%s&password=%s" % \
                                   (self.username, self.password), headers)
         self.cookie = resp.getheader("set-cookie")
@@ -90,9 +90,9 @@ class TagfilerClient(object):
         self.connection = None
         self.cookie = None
     
-    def _send_request(self, connection, method, url, body='', headers={}):
-        connection.request(method, url, body, headers)
-        resp = connection.getresponse()
+    def _send_request(self, method, url, body='', headers={}):
+        self.connection.request(method, url, body, headers)
+        resp = self.connection.getresponse()
         if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
             raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
         return resp
@@ -125,7 +125,7 @@ class TagfilerClient(object):
         headers = {}
         headers["Content-Type"] = "application/json"
         headers["Cookie"] = self.cookie
-        self._send_request(self.connection, "PUT", bulkurl, payload, headers)
+        self._send_request("PUT", bulkurl, payload, headers)
 
     def add_subject(self, fileobj):
         """Registers a single file in tagfiler
@@ -147,7 +147,7 @@ class TagfilerClient(object):
         url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(fileobj.get_tag("name")[0].get_tag_value()), "&".join(tag_pairs))
         headers = {}
         headers["Cookie"] = self.cookie
-        self._send_request(self.connection, "PUT", url, headers=headers)
+        self._send_request("PUT", url, headers=headers)
 
     def find_subject_by_name(self, name):
         """Looks up a subject by its name tag in tagfiler and returns a dictionary if found, None otherwise
@@ -162,7 +162,7 @@ class TagfilerClient(object):
         headers["Cookie"] = self.cookie
         headers["Accept"] = "application/json"
         try:
-            resp = self._send_request(self.connection, "GET", url, headers=headers)
+            resp = self._send_request("GET", url, headers=headers)
             subject = json.loads(resp.read())
         except HTTPException,e:
             logger.error(e)
