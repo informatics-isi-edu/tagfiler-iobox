@@ -11,7 +11,7 @@ Mac OS X 10.7, Windows 7, CentOS 5, and Fedora Core 11.
 
 Installation
 ~~~~~~~~~~~~
-To install from the Subversion repository :
+To install from the Subversion repository:
 
   0. Check out the code from SVN from the following location
      https://svn2.misd.isi.edu/repos/tagfiler/tagfiler-iobox/trunk.
