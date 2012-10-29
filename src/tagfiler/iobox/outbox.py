@@ -108,7 +108,9 @@ class Outbox():
                     self._dispatcher.is_alive())
         
     def join(self):
-        """QuickNDirty thread synchronization. TODO: need to re-do this later."""
+        """Joins on the Outbox until all pending tasks are processed."""
+        # Join on each stage of the pipeline and the dispatcher repeatedly due
+        # to how the tasks flow through the pipeline.
         self._find_q.join()
         self._dispatch_q.join()
         self._sum_q.join()

@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 class Register(Worker):
     """The registration pipeline worker."""
     
+    # Internal task to instruct Register worker to flush pending queue
+    __FLUSH = 'FLUSH'
+    
     def __init__(self, tasks, results, tagfiler):
         super(Register, self).__init__(tasks, results)
         assert isinstance(tagfiler, Tagfiler)
@@ -46,6 +49,6 @@ class Register(Worker):
     def do_work(self, task, work_done):
         logger.debug('Register:do_work: %s' % task)
         assert isinstance(task, File)
-        self._client.add_subject(task)
+        self._client.add_subjects([task])
         task.rtime = time.time()
         work_done(task)

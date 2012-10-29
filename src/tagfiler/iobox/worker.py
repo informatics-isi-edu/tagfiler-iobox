@@ -48,7 +48,7 @@ class Worker(threading.Thread):
     """
 
     # Internal marker added to the input queue to unblock a waiting worker.
-    __TERMINATE = '__TERMINATE'
+    __TERMINATE = 'TERMINATE'
         
     def __init__(self, tasks, results):
         """Initializes the Worker class.
@@ -135,7 +135,7 @@ class Worker(threading.Thread):
 
         while not self._terminate:
             task = self._tasks.get()
-            if task == Worker.__TERMINATE:
+            if task is Worker.__TERMINATE:
                 break
             self.do_work(task, self._work_done)
             self._tasks.task_done()
