@@ -94,18 +94,18 @@ class Outbox():
         
         self._terminated = True
         self._find.terminate()
-        self._dispatcher.terminate()
         self._sum.terminate()
         self._tag.terminate()
         self._register.terminate()
+        # self._dispatcher.terminate() -- TODO: not sure how to terminate the dispatcher, yet...
         
     def is_terminated(self):
         """Indicates whether the Outbox has terminated."""
         return not (self._find.is_alive() or 
                     self._sum.is_alive() or
                     self._tag.is_alive() or 
-                    self._register.is_alive() or
-                    self._dispatcher.is_alive())
+                    self._register.is_alive())# or
+                    #self._dispatcher.is_alive()) -- TODO: not sure how to terminate dispatcher
         
     def join(self):
         """Joins on the Outbox until all pending tasks are processed."""

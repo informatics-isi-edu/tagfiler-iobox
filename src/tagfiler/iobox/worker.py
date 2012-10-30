@@ -107,11 +107,12 @@ class Worker(threading.Thread):
         """
         pass
     
-    def on_terminate(self):
+    def on_terminate(self, work_done):
         """Called during termination.
         
         This method may be overriden by subclasses that want to perform some
-        one-time cleanup before the thread exits.
+        one-time cleanup before the thread exits. It also gives the worker a
+        chance to complete any pending work tasks before termination.
         """
         pass
     
@@ -140,5 +141,5 @@ class Worker(threading.Thread):
             self.do_work(task, self._work_done)
             self._tasks.task_done()
 
-        self.on_terminate()
+        self.on_terminate(self._work_done)
         logger.debug('run:END')

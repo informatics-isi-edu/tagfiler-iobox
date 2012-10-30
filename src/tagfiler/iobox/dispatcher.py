@@ -41,11 +41,17 @@ class Dispatcher(Worker):
         self._sumq = sumq
         self._tagq = tagq
         self._regq = registerq
+        
+    def on_start(self):
+        """Initializes the Outbox state persistence object."""
+        self._state = OutboxStateDAO(self._state_db)
+    
+    def on_terminate(self, work_done):
+        """Closes the outbox state persistence object."""
+        self._state.close()
 
     def do_work(self, task, work_done):
-        if self._state is None:
-            self._state = OutboxStateDAO(self._state_db)
-            
+        
         if task.status is None:
             exists = self._state.find_file(task.filename)
             if not exists:
@@ -58,6 +64,10 @@ class Dispatcher(Worker):
                 task.checksum = exists.checksum
                 task.status = File.COMPARE
                 self._sumq.put(task)
+            elif not exists.rtime:
+                logger.debug("Not registered: %s" % task.filename)
+                task.status = File.REGISTER
+                self._tagq.put(task)
             else:
                 logger.debug("Skipping: %s" % task.filename)
         
@@ -72,10 +82,14 @@ class Dispatcher(Worker):
                 task.checksum = task.compare
                 self._state.update_file(task)
                 self._tagq.put(task)
+            elif not exists.rtime:
+                logger.debug("Not registered: %s" % task.filename)
+                task.status = File.REGISTER
+                self._tagq.put(task)
             else:
                 logger.debug("Unchanged: %s" % task.filename)
                 # Update its mtime so that it won't be cksummed next time
-                self._state.update_file(task)
+                self._state.update_file(task) #TODO: this should be update_file_mtime(...)
             
         elif task.status == File.REGISTER:
             self._state.update_file(task)

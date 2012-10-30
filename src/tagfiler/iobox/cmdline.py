@@ -239,6 +239,6 @@ def main(args=None):
     outbox_manager.start()
     outbox_manager.join()
     outbox_manager.terminate()
-    #TODO: wait until all outbox.is_termintad() before exiting
+    #TODO: wait until all outbox.is_terminted() before exiting
     
     return __EXIT_SUCCESS
