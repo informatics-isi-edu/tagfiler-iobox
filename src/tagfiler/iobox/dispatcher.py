@@ -82,7 +82,7 @@ class Dispatcher(Worker):
                 task.checksum = task.compare
                 self._state.update_file(task)
                 self._tagq.put(task)
-            elif not exists.rtime:
+            elif not task.rtime:
                 logger.debug("Not registered: %s" % task.filename)
                 task.status = File.REGISTER
                 self._tagq.put(task)
