@@ -26,6 +26,7 @@ import logging
 import argparse
 import tempfile
 import json
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -237,8 +238,11 @@ def main(args=None):
     outbox_model.state_db = state_db
     outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
-    outbox_manager.join()
+    outbox_manager.done()
+    outbox_manager.wait_done()
+    logger.debug("Outbox done")
     outbox_manager.terminate()
-    #TODO: wait until all outbox.is_terminted() before exiting
-    
+    while not outbox_manager.is_terminated():
+        time.sleep(1) # TODO: Maybe should implement another callback in outbox...
+        
     return __EXIT_SUCCESS

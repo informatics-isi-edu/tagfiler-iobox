@@ -20,6 +20,7 @@ Implements the checksum stage of the Outbox.
 from worker import Worker
 from models import File
 from tagfiler.util import files
+import outbox
 
 import logging
 
@@ -32,6 +33,10 @@ class Checksum(Worker):
 
     def do_work(self, task, work_done):
         logger.debug('Checksum:do_work: %s' % task)
+        if task is outbox.Outbox._SUM_DONE:
+            work_done(task)
+            return
+        
         assert isinstance(task, File)
         checksum = files.sha256sum(task.filename) #TODO: this needs to be interuptable
         if task.status == File.COMPUTE:

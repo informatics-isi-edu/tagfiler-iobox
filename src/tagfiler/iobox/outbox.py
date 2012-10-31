@@ -19,7 +19,9 @@ Implements Outbox management.
 
 import worker, find, cksum, tag, register, models, dispatcher
 from tagfiler.util import rules
+
 import logging
+import threading
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,12 @@ logger = logging.getLogger(__name__)
 
 class Outbox():
     """This class represents each Outbox and manages its operations."""
+    
+    # Control flow flags
+    _FIND_DONE  =   'FIND_DONE'
+    _SUM_DONE   =   'SUM_DONE'
+    _TAG_DONE   =   'TAG_DONE'
+    _REG_DONE   =   'REG_DONE'
     
     def __init__(self, outbox_model):
         """Initializes the Outbox.
@@ -39,6 +47,8 @@ class Outbox():
         
         self._model = outbox_model
         self._terminated = False
+        self._done = False
+        self._cv_done = threading.Condition()
         
         self._find_q = worker.WorkQueue()
         self._sum_q = worker.WorkQueue()
@@ -67,7 +77,9 @@ class Outbox():
                                     self._register_q, self._dispatch_q,
                                     self._model.get_tagfiler())
         
-        self._dispatcher = dispatcher.Dispatcher(self._model.state_db,
+        self._dispatcher = dispatcher.Dispatcher(self._dispatcher_done,
+                                                 None,
+                                                 self._model.state_db,
                                                  self._dispatch_q, 
                                                  self._sum_q,
                                                  self._tag_q,
@@ -87,7 +99,12 @@ class Outbox():
         self._find.start()
 
     def terminate(self):
-        """Flags the Outbox to terminate gracefully."""
+        """Terminate the Outbox immediately.
+        
+        The Outbox will flag all threads to terminate immediately. The workers
+        will not attempt to finish pending tasks. They will cleanup safely, for
+        instance, closing and releasing any external resources.
+        """
         logger.debug("Outbox:terminate")
         
         assert self._terminated != True
@@ -97,16 +114,55 @@ class Outbox():
         self._sum.terminate()
         self._tag.terminate()
         self._register.terminate()
-        # self._dispatcher.terminate() -- TODO: not sure how to terminate the dispatcher, yet...
+        self._dispatcher.terminate()
         
     def is_terminated(self):
-        """Indicates whether the Outbox has terminated."""
+        """Has the Outbox has terminated?"""
         return not (self._find.is_alive() or 
                     self._sum.is_alive() or
                     self._tag.is_alive() or 
-                    self._register.is_alive())# or
-                    #self._dispatcher.is_alive()) -- TODO: not sure how to terminate dispatcher
+                    self._register.is_alive() or
+                    self._dispatcher.is_alive())
         
+    def done(self):
+        """Done with the Outbox.
+        
+        The Outbox will process pending tasks. When the pending tasks are
+        completed, the Outbox will set the done flag which may be checked
+        by calling 'is_done'.
+        
+        Note that the Outbox will not terminate. When it is done, you should
+        call 'terminate' before exiting so that the Outbox workers will 
+        release any external resources.
+        """
+        self._find_q.put(Outbox._FIND_DONE)
+        
+    def is_done(self):
+        """Is the Outbox done?"""
+        return self._done
+        
+    def _dispatcher_done(self, a):
+        """Callback for the dispatcher worker, on completion of the pipeline.
+        
+        The 'a' parameter is an unused argument required by the callback.
+        """
+        logger.debug("_dispatcher_done: called by dispatcher")
+        self._cv_done.acquire()
+        self._done = True
+        self._cv_done.notify_all()
+        self._cv_done.release()
+        
+    def wait_done(self, timeout=None):
+        """Wait for Outbox to complete its tasks.
+        
+        If 'timeout' is None, this call will block until the Outbox is done.
+        """
+        self._cv_done.acquire()
+        while not self._done:
+            self._cv_done.wait(timeout)
+        self._cv_done.release()
+        
+    # GET RID OF THIS TEMPORARY SYNCHRONIZATION
     def join(self):
         """Joins on the Outbox until all pending tasks are processed."""
         # Join on each stage of the pipeline and the dispatcher repeatedly due

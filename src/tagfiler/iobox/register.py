@@ -20,6 +20,7 @@ Implements the registration stage of the Outbox.
 from worker import Worker
 from models import Tagfiler, File
 from tagfiler.util.http import TagfilerClient
+import outbox
 
 import time
 import logging
@@ -64,6 +65,11 @@ class Register(Worker):
 
     def do_work(self, task, work_done):
         logger.debug('Register:do_work: %s' % task)
+        if task is outbox.Outbox._REG_DONE:
+            self._flush_pending(work_done)
+            work_done(task)
+            return
+        
         assert isinstance(task, File)
         self._pending.append(task)
         if len(self._pending) >= Register.__THRESHOLD:

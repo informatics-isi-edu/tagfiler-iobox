@@ -23,6 +23,7 @@ to the next workers task queue.
 from tagfiler.iobox.worker import Worker
 from tagfiler.iobox.dao import OutboxStateDAO
 from tagfiler.iobox.models import File
+import outbox
 
 import logging
 
@@ -33,9 +34,11 @@ logger = logging.getLogger(__name__)
 class Dispatcher(Worker):
     """The worker thread for the 'Dispatcher' for the Tagfiler Outbox."""
     
-    def __init__(self, state_db, tasks, sumq, tagq, registerq):
+    def __init__(self, donecb, a, state_db, tasks, sumq, tagq, registerq):
         """Initializes the object."""
         super(Dispatcher, self).__init__(tasks, None)
+        self._donecb = donecb
+        self._a = a
         self._state = None
         self._state_db = state_db
         self._sumq = sumq
@@ -51,16 +54,37 @@ class Dispatcher(Worker):
         self._state.close()
 
     def do_work(self, task, work_done):
+        logger.debug("do_work: %s" % task)
         
+        # Process control flow flags, first
+        if task is outbox.Outbox._FIND_DONE:
+            logger.debug("do_work: FIND_DONE")
+            self._sumq.put(outbox.Outbox._SUM_DONE)
+            return
+        elif task is outbox.Outbox._SUM_DONE:
+            logger.debug("do_work: SUM_DONE")
+            self._tagq.put(outbox.Outbox._TAG_DONE)
+            return
+        elif task is outbox.Outbox._TAG_DONE:
+            logger.debug("do_work: TAG_DONE")
+            self._regq.put(outbox.Outbox._REG_DONE)
+            return
+        elif task is outbox.Outbox._REG_DONE:
+            logger.debug("do_work: REG_DONE")
+            self._donecb(self._a)
+            return
+        
+        # Process persistent checkpointing
         if task.status is None:
             exists = self._state.find_file(task.filename)
+            if exists: task.id = exists.id
+                
             if not exists:
                 logger.debug("New: %s" % task.filename)
                 task.status = File.COMPUTE
                 self._sumq.put(task)
-            elif task.mtime > exists.mtime:
+            elif task.mtime > exists.mtime or not exists.checksum:
                 logger.debug("Modified: %s" % task.filename)
-                task.id = exists.id
                 task.checksum = exists.checksum
                 task.status = File.COMPARE
                 self._sumq.put(task)
@@ -92,4 +116,5 @@ class Dispatcher(Worker):
                 self._state.update_file(task) #TODO: this should be update_file_mtime(...)
             
         elif task.status == File.REGISTER:
+            logger.debug("Update file: %s" % task.filename)
             self._state.update_file(task)

@@ -17,9 +17,12 @@
 Implements the tagging stage of the Outbox pipeline.
 """
 
-import logging
-import worker, models
+import worker
+import models
 from tagfiler.util import rules
+import outbox
+
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,11 @@ class Tag(worker.Worker):
         self._tag_director = tag_director
 
     def do_work(self, task, work_done):
+        logger.debug('Tag:do_work: %s' % task)
+        if task is outbox.Outbox._TAG_DONE:
+            work_done(outbox.Outbox._REG_DONE)
+            return
+        
         assert isinstance(task, models.File)
-        logger.debug('Tag:do_work: File: %s' % task)
         self._tag_director.tag_registered_file(self._rules, task)
         work_done(task)

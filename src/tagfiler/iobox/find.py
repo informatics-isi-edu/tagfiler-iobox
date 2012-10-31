@@ -24,6 +24,8 @@ model objects.
 import tagfiler.iobox.worker as worker
 from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
 from tagfiler.iobox.models import File
+import outbox
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,8 +48,12 @@ class Find(worker.Worker):
         self._exclusion_patterns = exclusion_patterns
         
     def do_work(self, task, work_done):
+        logger.debug('Find:do_work: %s' % task)
+        if task is outbox.Outbox._FIND_DONE:
+            work_done(task)
+            return
+        
         path = task.get_filepath()
-        logger.debug('Find:do_work: root: %s' % path)
         for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
