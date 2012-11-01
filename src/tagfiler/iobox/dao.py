@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 class DataDAO(object):
    
     def __init__(self, db_filename, sql_filename):
-        """Constructs a DAO instance, creating the database schema in the database file if necessary
+        """Constructs a DAO instance, creating the database schema in the 
+        database file if necessary
         
         The 'db_filename' parameter is the filename of the database (a sqlite3 
         database).
@@ -183,23 +184,6 @@ class OutboxStateDAO(DataDAO):
             scan.set_files(self.find_files_in_scan(scan))
         return scan
     
-    def find_file_by_path(self, filepath):
-        """Retrieves a file object from the database matching the file path.
-        
-        Keyword arguments:
-        filepath -- fully qualified filename
-        
-        """
-        f = None
-        cursor = self.db.cursor()
-        p = (filepath,)
-        cursor.execute("SELECT id, filepath, mtime, size, checksum, must_tag FROM file WHERE filepath=?", p)
-        r = cursor.fetchone()
-        cursor.close()
-        if r is not None:
-            f = models.File(**r)
-        return f
-
     def add_file_to_scan(self, scan, f):
         """Adds an existing file to an existing scan in the database.
         
@@ -244,7 +228,6 @@ class OutboxStateDAO(DataDAO):
         
         Keyword arguments:
         scan -- the scan to complete
-        
         """
         completed_state = self.find_scan_state('COMPLETED_FILE_SCAN')
         end_time = time.time()
@@ -258,7 +241,6 @@ class OutboxStateDAO(DataDAO):
 
     def find_scans_to_tag(self):
         """Retrieves a list of scans that need to be tagging.
-        
         """
         scans = []
         cursor = self.db.cursor()
@@ -291,7 +273,6 @@ class OutboxStateDAO(DataDAO):
         r = cursor.fetchone()
         if r is None:
             cursor.execute("INSERT INTO register_file (file_id, added) VALUES (?, datetime('now'))", p)
-            
             cursor.execute("SELECT last_insert_rowid() AS id")
             registered_file.set_id(cursor.fetchone()["id"])
         else:
@@ -397,5 +378,4 @@ class OutboxStateDAO(DataDAO):
         cursor.execute("DELETE FROM register_file WHERE id=?", p)
         
         registered_file.set_id(None)
-        
 '''
