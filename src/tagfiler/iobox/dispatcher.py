@@ -56,65 +56,84 @@ class Dispatcher(Worker):
     def do_work(self, task, work_done):
         logger.debug("do_work: %s" % task)
         
+        #
         # Process control flow flags, first
+        #
         if task is outbox.Outbox._FIND_DONE:
-            logger.debug("do_work: FIND_DONE")
             self._sumq.put(outbox.Outbox._SUM_DONE)
             return
         elif task is outbox.Outbox._SUM_DONE:
-            logger.debug("do_work: SUM_DONE")
             self._tagq.put(outbox.Outbox._TAG_DONE)
             return
         elif task is outbox.Outbox._TAG_DONE:
-            logger.debug("do_work: TAG_DONE")
             self._regq.put(outbox.Outbox._REG_DONE)
             return
         elif task is outbox.Outbox._REG_DONE:
-            logger.debug("do_work: REG_DONE")
             self._donecb(self._a)
             return
         
+        #
         # Process persistent checkpointing
+        #
         if task.status is None:
+            # Case: we are in the FIND stage
             exists = self._state.find_file(task.filename)
             if exists: task.id = exists.id
                 
             if not exists:
+                # Case: New file, not seen before
                 logger.debug("New: %s" % task.filename)
                 task.status = File.COMPUTE
                 self._sumq.put(task)
-            elif task.mtime > exists.mtime or not exists.checksum:
+            elif task.mtime > exists.mtime:
+                # Case: File has changed since last seen
                 logger.debug("Modified: %s" % task.filename)
                 task.checksum = exists.checksum
+                task.rtime = exists.rtime
+                task.status = File.COMPARE
+                self._sumq.put(task)
+            elif task.size and not exists.checksum:
+                # Case: Missing checksum, on regular file
+                logger.debug("Missing checksum: %s" % task.filename)
+                task.checksum = exists.checksum
+                task.rtime = exists.rtime
                 task.status = File.COMPARE
                 self._sumq.put(task)
             elif not exists.rtime:
+                # Case: File has not been registered
                 logger.debug("Not registered: %s" % task.filename)
                 task.status = File.REGISTER
                 self._tagq.put(task)
             else:
+                # Case: File does not meet any criteria for processing
                 logger.debug("Skipping: %s" % task.filename)
         
         elif task.status == File.COMPUTE:
+            # Case: we are in the post Checksum COMPUTE stage
             task.status = File.REGISTER
             self._state.add_file(task)
             self._tagq.put(task)
             
         elif task.status == File.COMPARE:
+            # Case: we are in the post Checksum COMPARE stage
             if task.checksum != task.compare:
+                # Case: checksums differ, need to re-tag and register
                 task.status = File.REGISTER
                 task.checksum = task.compare
                 self._state.update_file(task)
                 self._tagq.put(task)
             elif not task.rtime:
+                # Case: File has not been registered
                 logger.debug("Not registered: %s" % task.filename)
                 task.status = File.REGISTER
                 self._tagq.put(task)
             else:
+                # Case: File checksum matches, update mtime only
                 logger.debug("Unchanged: %s" % task.filename)
                 # Update its mtime so that it won't be cksummed next time
-                self._state.update_file(task) #TODO: this should be update_file_mtime(...)
+                self._state.update_file(task)
             
         elif task.status == File.REGISTER:
+            # Case: we are in the post REGISTER stage
             logger.debug("Update file: %s" % task.filename)
             self._state.update_file(task)

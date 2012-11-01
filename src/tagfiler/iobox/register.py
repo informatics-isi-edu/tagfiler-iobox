@@ -59,19 +59,16 @@ class Register(Worker):
         self._client.login()
     
     def on_terminate(self, work_done):
-        if len(self._pending) > 0:
-            self._flush_pending(work_done)
         self._client.close()
 
     def do_work(self, task, work_done):
         logger.debug('Register:do_work: %s' % task)
         if task is outbox.Outbox._REG_DONE:
-            self._flush_pending(work_done)
+            if len(self._pending) > 0:
+                self._flush_pending(work_done)
             work_done(task)
-            return
-        
-        assert isinstance(task, File)
-        self._pending.append(task)
-        if len(self._pending) >= Register.__THRESHOLD:
-            self._flush_pending(work_done)
-
+        else:
+            assert isinstance(task, File)
+            self._pending.append(task)
+            if len(self._pending) >= Register.__THRESHOLD:
+                self._flush_pending(work_done)
