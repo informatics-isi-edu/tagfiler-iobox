@@ -34,8 +34,23 @@ logger = logging.getLogger(__name__)
 class Dispatcher(Worker):
     """The worker thread for the 'Dispatcher' for the Tagfiler Outbox."""
     
-    def __init__(self, donecb, a, state_db, tasks, sumq, tagq, registerq):
-        """Initializes the object."""
+    def __init__(self, state_db, tasks, sumq, tagq, registerq, donecb=None, a=None):
+        """Initializes the dispatcher object.
+        
+        The 'state_db' parameter is the filename for the state database. Thus
+        in sqlite3 terms, the file is the database.
+        
+        The 'tasks' parameter is a threading.Queue object used as the input
+        queue for this Worker. The 'sumq', 'tagq', and 'registerq' paremeters
+        are the output queues for the cksum, tag, and register workers, 
+        respectively.
+        
+        The 'donecb' and 'a' are optional parameters for callers that want 
+        asynchronous notification (via callback) for when the dispatcher 
+        processes the various DONE markers that trace through the pipeline. 
+        The callback will be invoked passing the option 'a' parameter as such, 
+        '...done(a)'. The nondescript name 'a' is typically used by convention.
+        """
         super(Dispatcher, self).__init__(tasks, None)
         self._donecb = donecb
         self._a = a
@@ -69,7 +84,8 @@ class Dispatcher(Worker):
             self._regq.put(outbox.Outbox._REG_DONE)
             return
         elif task is outbox.Outbox._REG_DONE:
-            self._donecb(self._a)
+            if self._donecb:
+                self._donecb(self._a)
             return
         
         #

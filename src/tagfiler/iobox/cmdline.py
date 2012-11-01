@@ -242,7 +242,7 @@ def main(args=None):
     outbox_manager.wait_done()
     logger.debug("Outbox done")
     outbox_manager.terminate()
-    while not outbox_manager.is_terminated():
+    while not outbox_manager.is_alive():
         time.sleep(1) # TODO: Maybe should implement another callback in outbox...
         
     return __EXIT_SUCCESS
