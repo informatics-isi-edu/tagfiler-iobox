@@ -325,10 +325,6 @@ class File(object):
     """File statistics that describe a file retrieved during scan or register.
     """
     
-    COMPUTE     = 1     # Compute checksum
-    COMPARE     = 2     # Compare checksum
-    REGISTER    = 3     # Register subject and tags
-    
     def __init__(self, **kwargs):
         self.id = kwargs.get("id")
         self.filename = kwargs.get("filename")
