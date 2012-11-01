@@ -70,7 +70,6 @@ class DataDAO(object):
                 cursor.execute(s)
             f.close()
             cursor.close()
-
     
     def close(self):
         if self.db is not None:
@@ -117,7 +116,6 @@ class OutboxStateDAO(DataDAO):
 
 
 '''
-
     def find_scan_state(self, state_name):
         """Returns the scan state object for a given scan state name.
         
