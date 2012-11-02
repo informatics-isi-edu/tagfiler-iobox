@@ -33,7 +33,7 @@ class Register(Worker):
     """The registration pipeline worker."""
     
     # Threshold for flushing queue automatically
-    __THRESHOLD = 10
+    __THRESHOLD = 1000
     
     def __init__(self, tasks, results, tagfiler):
         super(Register, self).__init__(tasks, results)
