@@ -24,9 +24,9 @@ import version
 import os
 import logging
 import argparse
-import tempfile
 import json
 import time
+import socket
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,8 @@ __EXIT_FAILURE = 1
 __PROG = "tagfiler-outbox"
 __DESC = "Tagfiler Outbox command-line interface"
 __VER  = version.VERSION_STRING
+__DEFAULT_OUTBOX_NAME = "outbox"
+__BULK_OPS_MAX = 1000
 
 # Verbosity to Loglevel dictionary
 __LOGLEVEL = {0: logging.ERROR,
@@ -49,10 +51,8 @@ __LOGLEVEL_MAX = 3
 __LOGLEVEL_DEFAULT = 0
 
 
-def create_default_name_path_rule():
+def create_default_name_path_rule(endpoint_name):
     """Creates the path rule for the required 'name' tag."""
-    import socket
-    endpoint_name = socket.gethostname()
     path_rule = models.PathRule()
     path_rule.set_pattern('^(?P<path>.*)')
     path_rule.set_extract('template')
@@ -92,19 +92,33 @@ def main(args=None):
     # General options
     parser.add_argument('--version', action='version', version=__VER)
     parser.add_argument('-n', '--name', type=str, default='default',
-                        help='name of the outbox to configure')
+                        help='name of the outbox configuration')
     # Use home directory as default location for outbox.conf
     default_config_path = os.path.join(os.path.expanduser('~'), 
-                                       '.tagfiler', 'outbox.json')
+                                       '.tagfiler', 'outbox.conf')
     parser.add_argument('-f', '--filename', type=str, 
                         default=default_config_path,
                         help=('configuration filename (default: %s)' % 
                               default_config_path))
+    # Use home directory as default location for state.db
+    default_state_db = os.path.join(os.path.expanduser('~'), 
+                                    '.tagfiler', 'state.db')
+    parser.add_argument('-s', '--state_db', type=str, 
+                        default=default_state_db,
+                        help=('local state database (default: %s)' % 
+                              default_state_db))
+    # Use hostname as default endpoint_name
+    default_endpoint_name = socket.gethostname()
+    parser.add_argument('-e', '--endpoint_name', type=str,
+                        default=default_endpoint_name,
+                        help=('endpoint name (default: %s)' % 
+                              default_endpoint_name))
     
     # Verbose | Quite option group
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='count', 
-                       default=__LOGLEVEL_DEFAULT, help='verbose output')
+                       default=__LOGLEVEL_DEFAULT, 
+                       help='verbose output (repeat to increase verbosity)')
     group.add_argument('-q', '--quiet', action='store_true', 
                        help='suppress output')
     
@@ -123,6 +137,9 @@ def main(args=None):
                        type=str, help='username used when connecting to Tagfiler')
     group.add_argument('--password', dest='password', metavar='PASSWORD', 
                        type=str, help='password used when connecting to Tagfiler')
+    group.add_argument('--bulk_ops_max', type=int, 
+                        help='maximum bulk operations per Tagfiler call' + \
+                        ' (default: %d)' % __BULK_OPS_MAX)
     
     # Roots option group
     group = parser.add_argument_group(title='Root directory options')
@@ -153,35 +170,36 @@ def main(args=None):
         else:
             f.close()
     
-    # Load name and create state db filename
-    name = cfg.get('name', 'outbox').strip()
-    dirname = os.path.dirname(args.filename)
-    if not os.path.exists(dirname):
-        dirname = tempfile.gettempdir()
-    state_db = os.path.join(dirname, name+".db")
+    # Create outbox model, and populate from settings
+    outbox_model = models.Outbox()
+    outbox_model.name = args.name or cfg.get('name', __DEFAULT_OUTBOX_NAME)
+    outbox_model.state_db = args.state_db or cfg.get('state_db', default_state_db)
 
     # Load Tagfiler
     tagfiler = models.Tagfiler()
     
-    url = cfg.get('url', args.url)
+    url = args.url or cfg.get('url')
     if url:
         tagfiler.set_url(url)
     else:
         parser.error('Tagfiler URL must be given.')
     
-    username = cfg.get('username', args.username)
+    username = args.username or cfg.get('username')
     if username:
         tagfiler.set_username(username)
     else:
         parser.error('Tagfiler username must be given.')
     
-    password = cfg.get('password', args.password)
+    password = args.password or cfg.get('password')
     if password:
         tagfiler.set_password(password)
     else:
         parser.error('Tagfiler password must be given.')
-    
-    outbox_model = models.Outbox()
+        
+    outbox_model.bulk_ops_max = args.bulk_ops_max or \
+                                cfg.get('bulk_ops_max', __BULK_OPS_MAX)
+    outbox_model.endpoint_name = args.endpoint_name or \
+                                cfg.get('endpoint_name', default_endpoint_name)
     outbox_model.set_tagfiler(tagfiler)
 
     # Load roots from config file
@@ -226,7 +244,8 @@ def main(args=None):
         outbox_model.add_inclusion_pattern(inpat)
     
     # Add the default 'name' tag path rule
-    outbox_model.add_path_rule(create_default_name_path_rule())
+    outbox_model.add_path_rule(
+                create_default_name_path_rule(outbox_model.endpoint_name))
     
     # Add optional path rules
     pathrules = cfg.get('pathrules', [])
@@ -235,12 +254,11 @@ def main(args=None):
         outbox_model.add_path_rule(path_rule)
 
     # Now, create the outbox manager and let it run to completion
-    outbox_model.state_db = state_db
     outbox_manager = outbox.Outbox(outbox_model)
     outbox_manager.start()
     outbox_manager.done()
     outbox_manager.wait_done()
-    logger.debug("Outbox done")
+    logger.debug("done")
     outbox_manager.terminate()
     while not outbox_manager.is_alive():
         time.sleep(1) # TODO: Maybe should implement another callback in outbox...

@@ -23,11 +23,10 @@ class Outbox(object):
     
     """
     def __init__(self, **kwargs):
-        import socket
-        self.id = kwargs.get("outbox_id")
-        self.name = kwargs.get("outbox_name")
+        self.name = kwargs.get("name")
         self.state_db = kwargs.get("state_db")
-        self.endpoint_name = kwargs.get("endpoint_name", socket.getfqdn().lower())
+        self.bulk_ops_max = kwargs.get("bulk_ops_max")
+        self.endpoint_name = kwargs.get("endpoint_name")
         self.tagfiler = Tagfiler(**kwargs)
         self.roots = []
         self.inclusion_patterns = []
@@ -35,19 +34,6 @@ class Outbox(object):
         self.path_rules = []
         self.line_rules = []
 
-    def set_id(self, i):
-        self.id = i
-    
-    def get_id(self):
-        return self.id
-    def get_name(self):
-        return self.name
-    def set_name(self, name):
-        self.name = name
-    def get_endpoint_name(self):
-        return self.endpoint_name
-    def set_endpoint_name(self, endpoint_name):
-        self.endpoint_name = endpoint_name
     def get_tagfiler(self):
         return self.tagfiler
     def set_tagfiler(self, tagfiler):

@@ -32,13 +32,11 @@ logger = logging.getLogger(__name__)
 class Register(Worker):
     """The registration pipeline worker."""
     
-    # Threshold for flushing queue automatically
-    __THRESHOLD = 1000
-    
-    def __init__(self, tasks, results, tagfiler):
+    def __init__(self, tasks, results, tagfiler, bulk_ops_max):
         super(Register, self).__init__(tasks, results)
         assert isinstance(tagfiler, Tagfiler)
         self._client = TagfilerClient(tagfiler)
+        self._bulk_ops_max = bulk_ops_max
         
         # _pending is implemented as a list, rather than a deque, because
         # we do not need to popfirst. Instead, when it is full we simply
@@ -70,5 +68,5 @@ class Register(Worker):
         else:
             assert isinstance(task, File)
             self._pending.append(task)
-            if len(self._pending) >= Register.__THRESHOLD:
+            if len(self._pending) >= self._bulk_ops_max:
                 self._flush_pending(work_done)
