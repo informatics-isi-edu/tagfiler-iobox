@@ -17,7 +17,7 @@
 Tagfiler client.
 """
 
-from tagfiler.iobox.models import Tagfiler, File
+from tagfiler.iobox.models import File
 
 import urlparse
 import urllib
@@ -39,14 +39,10 @@ logger = logging.getLogger(__name__)
 class TagfilerClient(object):
     """Web service client used to interact with the Tagfiler REST service.
     """
-    def __init__(self, config, **kwargs):
-        """Initializes the object.
-        
-        The 'config' parameter is expected to be a Tagfiler model object.
+    def __init__(self, url, username, password=None):
+        """Initializes the Tagfiler client object.
         """
-        assert isinstance(config, Tagfiler)
-
-        pieces = urlparse.urlparse(config.get_url())
+        pieces = urlparse.urlparse(url)
         
         self.scheme = pieces[0]
         host_port = pieces[1].split(":")
@@ -55,8 +51,8 @@ class TagfilerClient(object):
         if len(host_port) > 1:
             self.port = host_port[1]
         self.baseuri = pieces[2]
-        self.username = config.get_username()
-        self.password = config.get_password()
+        self.username = username
+        self.password = password
         self.connection_class = None
         if self.scheme == "https":
             self.connection_class = HTTPSConnection

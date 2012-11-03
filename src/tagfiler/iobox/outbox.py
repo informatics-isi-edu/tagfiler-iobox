@@ -75,7 +75,9 @@ class Outbox():
         
         self._register = register.Register(
                                     self._register_q, self._dispatch_q,
-                                    self._model.get_tagfiler(),
+                                    self._model.url,
+                                    self._model.username,
+                                    self._model.password,
                                     self._model.bulk_ops_max)
         
         self._dispatcher = dispatcher.Dispatcher(self._model.state_db,

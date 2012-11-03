@@ -176,34 +176,25 @@ def main(args=None):
     outbox_model.name = args.name or cfg.get('name', __DEFAULT_OUTBOX_NAME)
     outbox_model.state_db = args.state_db or cfg.get('state_db', default_state_db)
 
-    # Load Tagfiler
-    tagfiler = models.Tagfiler()
-    
-    url = args.url or cfg.get('url')
-    if url:
-        tagfiler.set_url(url)
-    else:
+    # Tagfiler settings
+    outbox_model.url = args.url or cfg.get('url')
+    if not outbox_model.url:
         parser.error('Tagfiler URL must be given.')
     
-    username = args.username or cfg.get('username')
-    if username:
-        tagfiler.set_username(username)
-    else:
+    outbox_model.username = args.username or cfg.get('username')
+    if not outbox_model.username:
         parser.error('Tagfiler username must be given.')
     
-    password = args.password or cfg.get('password')
-    if password:
-        tagfiler.set_password(password)
-    else:
+    outbox_model.password = args.password or cfg.get('password')
+    if not outbox_model.password:
         parser.error('Tagfiler password must be given.')
         
     outbox_model.bulk_ops_max = args.bulk_ops_max or \
                                 cfg.get('bulk_ops_max', __BULK_OPS_MAX)
     outbox_model.endpoint_name = args.endpoint_name or \
                                 cfg.get('endpoint_name', default_endpoint_name)
-    outbox_model.set_tagfiler(tagfiler)
 
-    # Configure roots
+    # Roots
     roots = args.root or cfg.get('roots')
     for root in roots:
         outbox_model.roots.append(root)

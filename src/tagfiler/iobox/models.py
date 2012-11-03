@@ -19,25 +19,23 @@ Model classes for representing state in the Outbox.
 
 
 class Outbox(object):
-    """outbox configuration object that retains information about its tagfiler, roots, inclusion/exclusion patterns, path/line matches.
-    
+    """outbox configuration object that retains information about its 
+    tagfiler, roots, inclusion/exclusion patterns, path/line matches.
     """
     def __init__(self, **kwargs):
         self.name = kwargs.get("name")
         self.state_db = kwargs.get("state_db")
         self.bulk_ops_max = kwargs.get("bulk_ops_max")
         self.endpoint_name = kwargs.get("endpoint_name")
-        self.tagfiler = Tagfiler(**kwargs)
+        self.url = kwargs.get("url")
+        self.username = kwargs.get("username")
+        self.password = kwargs.get("password")
         self.roots = kwargs.get("roots", [])
         self.includes = kwargs.get("includes", [])
         self.excludes = kwargs.get("excludes", [])
         self.path_rules = []
         self.line_rules = []
 
-    def get_tagfiler(self):
-        return self.tagfiler
-    def set_tagfiler(self, tagfiler):
-        self.tagfiler = tagfiler
     def get_all_rules(self):
         all_rules = []
         all_rules.extend(self.path_rules)
@@ -56,32 +54,6 @@ class Outbox(object):
         self.line_rules = line_rules
     def add_line_rule(self, line_rule):
         self.line_rules.append(line_rule)
-
-class Tagfiler(object):
-    """Tagfiler configuration object that retains information about its url, username, and password.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("tagfiler_id")
-        self.url = kwargs.get("tagfiler_url")
-        self.username = kwargs.get("tagfiler_username")
-        self.password = kwargs.get("tagfiler_password")
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-    def get_url(self):
-        return self.url
-    def set_url(self, url):
-        self.url = url
-    def get_username(self):
-        return self.username
-    def set_username(self, username):
-        self.username = username
-    def get_password(self):
-        return self.password
-    def set_password(self, password):
-        self.password = password
 
 class RERule(object):
     """Regular expression used in an outbox for tagging.
@@ -371,49 +343,6 @@ class RegisterTag(object):
     def set_tag_value(self, tag_value):
         self.tag_value = tag_value
 
-'''
-class RegisterFile(object):
-    """File that should be registered in tagfiler
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("register_file_id")
-        self.file = File(**kwargs)
-        self.added = kwargs.get("added")
-        self.tags = []
-
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-    def get_file(self):
-        return self.file
-    def set_file(self, f):
-        self.file = f
-    def get_added(self):
-        return self.added
-    def set_added(self, a):
-        self.added = a
-    def get_tags(self):
-        return self.tags
-    def set_tags(self, tags):
-        self.tags = tags
-    def add_tag(self, tag):
-        self.tags.append(tag)
-    def get_tag(self, tag_name):
-        tag = []
-        for t in self.tags:
-            if t.get_tag_name() == tag_name:
-                tag.append(t)
-        return tag
-
-    def __str__(self):
-        s = "%s [" % str(self.file)
-        for t in self.tags:
-            s += "%s=%s, " % (t.get_tag_name(), t.get_tag_value())
-        s += "]"
-        return s
-'''
 
 def create_default_name_path_rule(endpoint_name):
     path_rule = PathRule()

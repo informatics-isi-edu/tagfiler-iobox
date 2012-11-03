@@ -18,7 +18,7 @@ Implements the registration stage of the Outbox.
 """
 
 from worker import Worker
-from models import Tagfiler, File
+from models import File
 from tagfiler.util.http import TagfilerClient
 import outbox
 
@@ -32,10 +32,9 @@ logger = logging.getLogger(__name__)
 class Register(Worker):
     """The registration pipeline worker."""
     
-    def __init__(self, tasks, results, tagfiler, bulk_ops_max):
+    def __init__(self, tasks, results, url, username, password, bulk_ops_max):
         super(Register, self).__init__(tasks, results)
-        assert isinstance(tagfiler, Tagfiler)
-        self._client = TagfilerClient(tagfiler)
+        self._client = TagfilerClient(url, username, password)
         self._bulk_ops_max = bulk_ops_max
         
         # _pending is implemented as a list, rather than a deque, because
