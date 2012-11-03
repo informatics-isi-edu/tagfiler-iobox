@@ -65,8 +65,8 @@ class Outbox():
         # The pipeline consists of the Find, Tag, and Register workers with their
         # associated WorkQueues.
         self._find = find.Find(self._find_q, self._dispatch_q, 
-                               self._model.get_inclusion_patterns(),
-                               self._model.get_exclusion_patterns())
+                               excludes=self._model.excludes,
+                               includes=self._model.includes)
         
         self._sum = cksum.Checksum(self._sum_q, self._dispatch_q)
         

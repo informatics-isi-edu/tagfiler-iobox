@@ -33,19 +33,21 @@ logger = logging.getLogger(__name__)
 class Find(worker.Worker):
     """The worker thread for the 'Find' stage of the Tagfiler Outbox."""
     
-    def __init__(self, tasks, results, inclusion_patterns=[], exclusion_patterns=[]):
-        """
-        Initializes the Find class.
+    def __init__(self, tasks, results, excludes=[], includes=[]):
+        """Initializes the Find object.
         
-        Arguments:
-            tasks: a WorkQueue of tasks.
-            results: a WorkQueue of results.
-            inclusion_patterns: optional list of 'InclusionPattern' objects
-            exclusion_patterns: optional list of 'ExclusionPattern' objects
+        The 'tasks' parameter is a WorkQueue of pending tasks for the Find
+        worker to process.
+        
+        The 'results' parameter is a WorkQueue of completed tasks output by
+        the Find worker.
+        
+        The 'includes' and 'excludes' parameters are lists of re objects or 
+        other objects that provide similar search(...) functions.
         """
         super(Find, self).__init__(tasks, results)
-        self._inclusion_patterns = inclusion_patterns
-        self._exclusion_patterns = exclusion_patterns
+        self._includes = includes
+        self._excludes = excludes
         
     def do_work(self, task, work_done):
         logger.debug('Find:do_work: %s' % task)
@@ -54,7 +56,8 @@ class Find(worker.Worker):
             return
         
         path = task.get_filepath()
-        for (rfpath, size, mtime, user, group) in tree_scan_stats(path):
+        for (rfpath, size, mtime, user, group) in \
+                        tree_scan_stats(path, self._excludes, self._includes):
             logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
                          (rfpath, size, mtime, user, group))
             filename = create_uri_friendly_file_path(path, rfpath)

@@ -29,8 +29,8 @@ class Outbox(object):
         self.endpoint_name = kwargs.get("endpoint_name")
         self.tagfiler = Tagfiler(**kwargs)
         self.roots = []
-        self.inclusion_patterns = []
-        self.exclusion_patterns = []
+        self.includes = kwargs.get("includes", [])
+        self.excludes = kwargs.get("excludes", [])
         self.path_rules = []
         self.line_rules = []
 
@@ -44,18 +44,6 @@ class Outbox(object):
         self.roots = roots
     def add_root(self, r):
         self.roots.append(r)
-    def get_inclusion_patterns(self):
-        return self.inclusion_patterns
-    def set_inclusion_patterns(self, inclusion_patterns):
-        self.inclusion_patterns = inclusion_patterns
-    def add_inclusion_pattern(self, inclusion_pattern):
-        self.inclusion_patterns.append(inclusion_pattern)
-    def get_exclusion_patterns(self):
-        return self.exclusion_patterns
-    def set_exclusion_patterns(self, exclusion_patterns):
-        self.exclusion_patterns = exclusion_patterns
-    def add_exclusion_pattern(self, exclusion_pattern):
-        self.exclusion_patterns.append(exclusion_pattern)
     def get_all_rules(self):
         all_rules = []
         all_rules.extend(self.path_rules)

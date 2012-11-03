@@ -27,6 +27,7 @@ import argparse
 import json
 import time
 import socket
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -223,25 +224,13 @@ def main(args=None):
         parser.error('Must specify at least one root directory.')
     
     # Add include/exclusion patterns
-    if args.exclude:
-        for exclude in args.exclude:
-            expat = models.ExclusionPattern(pattern=exclude)
-            outbox_model.add_exclusion_pattern(expat)
-    
-    excludes = cfg.get('excludes', [])
+    excludes = args.exclude or cfg.get('excludes')
     for exclude in excludes:
-        expat = models.ExclusionPattern(pattern=exclude)
-        outbox_model.add_exclusion_pattern(expat)
+        outbox_model.excludes.append(re.compile(exclude))
     
-    if args.include:
-        for include in args.include:
-            inpat = models.InclusionPattern(pattern=include)
-            outbox_model.add_inclusion_pattern(inpat)
-    
-    includes = cfg.get('includes', [])
+    includes = args.include or cfg.get('includes')
     for include in includes:
-        inpat = models.InclusionPattern(pattern=include)
-        outbox_model.add_inclusion_pattern(inpat)
+        outbox_model.includes.append(re.compile(include))
     
     # Add the default 'name' tag path rule
     outbox_model.add_path_rule(
