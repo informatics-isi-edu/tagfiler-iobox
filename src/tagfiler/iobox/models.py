@@ -28,7 +28,7 @@ class Outbox(object):
         self.bulk_ops_max = kwargs.get("bulk_ops_max")
         self.endpoint_name = kwargs.get("endpoint_name")
         self.tagfiler = Tagfiler(**kwargs)
-        self.roots = []
+        self.roots = kwargs.get("roots", [])
         self.includes = kwargs.get("includes", [])
         self.excludes = kwargs.get("excludes", [])
         self.path_rules = []
