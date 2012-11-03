@@ -15,7 +15,7 @@
 #
 """
 This module implements the 'Find' stage of the Tagfiler Outbox. It works on a 
-queue of Root model objects. Each root directory is walked and file entries 
+queue of root directories. Each root directory is walked and file entries 
 are filtered according to inclusion and exclusion patterns. It also gets the 
 stats for each file entrye. The 'Find' stage then fills a queue with File 
 model objects.
@@ -53,15 +53,14 @@ class Find(worker.Worker):
         logger.debug('Find:do_work: %s' % task)
         if task is outbox.Outbox._FIND_DONE:
             work_done(task)
-            return
-        
-        path = task.get_filepath()
-        for (rfpath, size, mtime, user, group) in \
-                        tree_scan_stats(path, self._excludes, self._includes):
-            logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
-                         (rfpath, size, mtime, user, group))
-            filename = create_uri_friendly_file_path(path, rfpath)
-            args = {'filename': filename, 'mtime': mtime, 'size': size, \
-                    'username': user, 'groupname': group}
-            f = File(**args)
-            work_done(f)
+        else:
+            path = task
+            for (rfpath, size, mtime, user, group) in \
+                    tree_scan_stats(path, self._excludes, self._includes):
+                logger.debug('Find:do_work: scan: %s, %s, %s, %s, %s' % 
+                             (rfpath, size, mtime, user, group))
+                filename = create_uri_friendly_file_path(path, rfpath)
+                args = {'filename': filename, 'mtime': mtime, 'size': size, \
+                        'username': user, 'groupname': group}
+                f = File(**args)
+                work_done(f)

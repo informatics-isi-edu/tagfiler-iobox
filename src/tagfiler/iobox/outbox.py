@@ -58,9 +58,8 @@ class Outbox():
         self._dispatch_q = worker.WorkQueue()
         
         # Populate Find's queue with the root directories.
-        for root in self._model.get_roots():
+        for root in self._model.roots:
             self._find_q.put(root)
-            logger.debug("Added root %s to the Find queue" % str(root))
 
         # The pipeline consists of the Find, Tag, and Register workers with their
         # associated WorkQueues.

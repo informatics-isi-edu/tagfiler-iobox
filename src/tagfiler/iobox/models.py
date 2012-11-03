@@ -38,12 +38,6 @@ class Outbox(object):
         return self.tagfiler
     def set_tagfiler(self, tagfiler):
         self.tagfiler = tagfiler
-    def get_roots(self):
-        return self.roots
-    def set_roots(self, roots):
-        self.roots = roots
-    def add_root(self, r):
-        self.roots.append(r)
     def get_all_rules(self):
         all_rules = []
         all_rules.extend(self.path_rules)
@@ -88,26 +82,6 @@ class Tagfiler(object):
         return self.password
     def set_password(self, password):
         self.password = password
-
-class Root(object):
-    """File scan root assigned to an outbox.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.filepath = kwargs.get("filepath")
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-
-    def get_filepath(self):
-        return self.filepath
-    def set_filepath(self, filepath):
-        self.filepath = filepath
-
-    def __str__(self):
-        return self.filepath
 
 class RERule(object):
     """Regular expression used in an outbox for tagging.

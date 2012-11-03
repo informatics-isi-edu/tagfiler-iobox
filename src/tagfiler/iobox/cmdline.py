@@ -144,7 +144,7 @@ def main(args=None):
     
     # Roots option group
     group = parser.add_argument_group(title='Root directory options')
-    group.add_argument('--rootdir', metavar='DIRECTORY', 
+    group.add_argument('--root', metavar='DIRECTORY', 
                        type=str, nargs='+',
                        help='add root directories to the base configuration')
     args = parser.parse_args(args)
@@ -203,24 +203,11 @@ def main(args=None):
                                 cfg.get('endpoint_name', default_endpoint_name)
     outbox_model.set_tagfiler(tagfiler)
 
-    # Load roots from config file
-    roots = []
-    rootdirs = cfg.get('rootdirs', [])
-    for rootdir in rootdirs:
-        root = models.Root()
-        root.set_filepath(rootdir)
-        roots.append(root)
-    
-    # Load roots from args
-    if args.rootdir:
-        for rootdir in args.rootdir:
-            root = models.Root()
-            root.set_filepath(rootdir)
-            roots.append(root)
-
-    if len(roots) > 0:
-        outbox_model.set_roots(roots)
-    else:
+    # Configure roots
+    roots = args.root or cfg.get('roots')
+    for root in roots:
+        outbox_model.roots.append(root)
+    if len(roots) == 0:
         parser.error('Must specify at least one root directory.')
     
     # Add include/exclusion patterns
