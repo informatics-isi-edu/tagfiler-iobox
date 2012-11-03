@@ -109,34 +109,6 @@ class Root(object):
     def __str__(self):
         return self.filepath
 
-class Pattern(object):
-    """Abstract parent for patterns associated with an outbox.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.pattern = kwargs.get("pattern")
-    def get_pattern(self):
-        return self.pattern
-    def set_pattern(self, pattern):
-        self.pattern = pattern
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-
-class ExclusionPattern(Pattern):
-    """Exclusion pattern associated with an outbox.
-    
-    """
-    pass
-
-class InclusionPattern(Pattern):
-    """Inclusion pattern associated with an outbox.
-    
-    """
-    pass
-
 class RERule(object):
     """Regular expression used in an outbox for tagging.
     
