@@ -174,7 +174,8 @@ def main(args=None):
     # Create outbox model, and populate from settings
     outbox_model = models.Outbox()
     outbox_model.name = args.name or cfg.get('name', __DEFAULT_OUTBOX_NAME)
-    outbox_model.state_db = args.state_db or cfg.get('state_db', default_state_db)
+    outbox_model.state_db = args.state_db or \
+                            cfg.get('state_db', default_state_db)
 
     # Tagfiler settings
     outbox_model.url = args.url or cfg.get('url')
@@ -211,14 +212,14 @@ def main(args=None):
         outbox_model.includes.append(re.compile(include))
     
     # Add the default 'name' tag path rule
-    outbox_model.add_path_rule(
-                create_default_name_path_rule(outbox_model.endpoint_name))
+    name_rule = create_default_name_path_rule(outbox_model.endpoint_name)
+    outbox_model.path_rules.append(name_rule)
     
     # Add optional path rules
-    pathrules = cfg.get('pathrules', [])
+    pathrules = cfg.get('rules', [])
     for pathrule in pathrules:
         path_rule = create_path_rule(**pathrule)
-        outbox_model.add_path_rule(path_rule)
+        outbox_model.path_rules.append(path_rule)
 
     # Now, create the outbox manager and let it run to completion
     outbox_manager = outbox.Outbox(outbox_model)

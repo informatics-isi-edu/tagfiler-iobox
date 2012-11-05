@@ -33,27 +33,9 @@ class Outbox(object):
         self.roots = kwargs.get("roots", [])
         self.includes = kwargs.get("includes", [])
         self.excludes = kwargs.get("excludes", [])
-        self.path_rules = []
-        self.line_rules = []
+        self.path_rules = kwargs.get("path_rules", [])
+        self.line_rules = kwargs.get("line_rules", [])
 
-    def get_all_rules(self):
-        all_rules = []
-        all_rules.extend(self.path_rules)
-        all_rules.extend(self.line_rules)
-        return all_rules
-
-    def get_path_rules(self):
-        return self.path_rules
-    def set_path_rules(self, path_rules):
-        self.path_rules = path_rules
-    def add_path_rule(self, path_rule):
-        self.path_rules.append(path_rule)
-    def get_line_rules(self):
-        return self.line_rules
-    def set_line_rules(self, line_rules):
-        self.line_rules = line_rules
-    def add_line_rule(self, line_rule):
-        self.line_rules.append(line_rule)
 
 class RERule(object):
     """Regular expression used in an outbox for tagging.

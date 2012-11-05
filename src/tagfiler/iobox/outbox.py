@@ -70,7 +70,7 @@ class Outbox():
         self._sum = cksum.Checksum(self._sum_q, self._dispatch_q)
         
         self._tag = tag.Tag(self._tag_q, self._register_q, 
-                            self._model.get_all_rules(),
+                            self._model.path_rules,
                             rules.TagDirector())
         
         self._register = register.Register(
