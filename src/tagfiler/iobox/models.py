@@ -42,23 +42,19 @@ class RERule(object):
     
     """
     def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.name = kwargs.get("name")
-        self.prepattern = None # TODO: populate?
+        self.prepattern = kwargs.get("prepattern")
         self.pattern = kwargs.get("pattern")
         self.apply = kwargs.get("apply", "match")
         self.extract = kwargs.get("extract", "single")
-        self.rewrites = []
-        self.constants = []
-        self.tags = []
-        self.templates = []
+        self.rewrites = kwargs.get("rewrites", [])
+        self.constants = kwargs.get("constants", [])
+        self.tags = kwargs.get("tags", [])
+        self.templates = kwargs.get("templates", [])
 
 
 class LineRule(object):
     def __init__(self, **kwargs):
-        self.path_rule = None
-        self.id = kwargs.get("id")
-        self.name = kwargs.get("name")
+        self.path_rule = kwargs.get("path_rule")
         self.rerules = kwargs.get("rerules", [])
         
 
