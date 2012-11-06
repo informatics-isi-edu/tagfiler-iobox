@@ -19,7 +19,7 @@ Model classes for representing state in the Outbox.
 
 
 class Outbox(object):
-    """outbox configuration object that retains information about its 
+    """Outbox configuration object that retains information about its 
     tagfiler, roots, inclusion/exclusion patterns, path/line matches.
     """
     def __init__(self, **kwargs):
@@ -38,103 +38,36 @@ class Outbox(object):
 
 
 class RERule(object):
-    """Regular expression used in an outbox for tagging.
-    
-    """
+    """Regular expression used in an outbox for tagging."""
     def __init__(self, **kwargs):
         self.prepattern = kwargs.get("prepattern")
         self.pattern = kwargs.get("pattern")
         self.apply = kwargs.get("apply", "match")
         self.extract = kwargs.get("extract", "single")
-        self.rewrites = kwargs.get("rewrites", [])
-        self.constants = kwargs.get("constants", [])
         self.tags = kwargs.get("tags", [])
         self.templates = kwargs.get("templates", [])
+        self.rewrites = kwargs.get("rewrites", [])
+        self.constants = kwargs.get("constants", [])
 
 
 class LineRule(object):
     def __init__(self, **kwargs):
         self.path_rule = kwargs.get("path_rule")
         self.rerules = kwargs.get("rerules", [])
-        
 
-class RERuleComponent(object):
-    """Abstract parent for components associated with a rerule.
-    
-    """
+
+class RERuleConstant(object):
+    """Constant assigned to a rerule."""
     def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.rerule_id = kwargs.get("rerule_id")
-        
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-    def set_rerule_id(self, i):
-        self.rerule_id = i
-    def get_rerule_id(self):
-        return self.rerule_id
+        self.name = kwargs.get("name")
+        self.value = kwargs.get("value")        
 
-class RERuleTag(RERuleComponent):
-    """Tag assigned to a rerule.
-    
-    """
+
+class RERuleRewrite(object):
+    """Rewrite patterns and templates for a rerule."""
     def __init__(self, **kwargs):
-        super(RERuleTag, self).__init__(**kwargs)
-        self.tag_name = kwargs.get("tag_name")
-
-    def get_tag_name(self):
-        return self.tag_name
-    def set_tag_name(self, tag_name):
-        self.tag_name = tag_name
-    
-
-class RERuleTemplate(RERuleComponent):
-    """Template assigned to a rerule.
-    
-    """
-    def __init__(self, **kwargs):
-        super(RERuleTemplate, self).__init__(**kwargs)
+        self.pattern = kwargs.get("pattern")
         self.template = kwargs.get("template")
-    def get_template(self):
-        return self.template
-    def set_template(self, template):
-        self.template = template
-
-class RERuleConstant(RERuleComponent):
-    """Constant assigned to a rerule.
-    
-    """
-    def __init__(self, **kwargs):
-        super(RERuleConstant, self).__init__(**kwargs)
-        self.constant_name = kwargs.get("constant_name")
-        self.constant_value = kwargs.get("constant_value")
-    def set_constant_name(self, constant_name):
-        self.constant_name = constant_name
-    def get_constant_name(self):
-        return self.constant_name
-    def set_constant_value(self, constant_value):
-        self.constant_value = constant_value
-    def get_constant_value(self):
-        return self.constant_value
-
-class RERuleRewrite(RERuleComponent):
-    """Rewrite patterns and templates for a rerule.
-    
-    """
-    def __init__(self, **kwargs):
-        super(RERuleRewrite, self).__init__(**kwargs)
-        self.rewrite_pattern = kwargs.get("rewrite_pattern")
-        self.rewrite_template = kwargs.get('rewrite_template')
-    def get_rewrite_pattern(self):
-        return self.rewrite_pattern
-    def set_rewrite_pattern(self, rewrite_pattern):
-        self.rewrite_pattern = rewrite_pattern
-        
-    def get_rewrite_template(self):
-        return self.rewrite_template
-    def set_rewrite_template(self, rewrite_template):
-        self.rewrite_template = rewrite_template
 
 
 class File(object):
@@ -181,6 +114,29 @@ class File(object):
         return s
 
 
+class RegisterTag(object):
+    """Tag that is assigned to a registered file.
+    
+    """
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id")
+        self.tag_name = kwargs.get("tag_name")
+        self.tag_value = kwargs.get("tag_value")
+        
+    def set_id(self, i):
+        self.id = i
+    def get_id(self):
+        return self.id
+    def get_tag_name(self):
+        return self.tag_name
+    def set_tag_name(self, tag_name):
+        self.tag_name = tag_name
+    def get_tag_value(self):
+        return self.tag_value
+    def set_tag_value(self, tag_value):
+        self.tag_value = tag_value
+
+
 class ScanState(object):
     """Current state of a scan.
     """
@@ -196,6 +152,7 @@ class ScanState(object):
         self.state = state
     def get_state(self):
         return self.state
+
 
 class Scan(object):
     """File scan that maintains information about its start/end time, current state, and files.
@@ -231,38 +188,11 @@ class Scan(object):
     def add_file(self, f):
         self.files.append(f)
 
-class RegisterTag(object):
-    """Tag that is assigned to a registered file.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.tag_name = kwargs.get("tag_name")
-        self.tag_value = kwargs.get("tag_value")
-        
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def get_tag_name(self):
-        return self.tag_name
-    def set_tag_name(self, tag_name):
-        self.tag_name = tag_name
-    def get_tag_value(self):
-        return self.tag_value
-    def set_tag_value(self, tag_value):
-        self.tag_value = tag_value
-
 
 def create_default_name_path_rule(endpoint_name):
     path_rule = RERule()
     path_rule.pattern = '^(?P<path>.*)'
     path_rule.extract = 'template'
-    t1 = RERuleTemplate()
-    t1.set_template('file://%s\g<path>' % endpoint_name)
-    path_rule.add_template(t1)
-    tg1 = RERuleTag()
-    tg1.set_tag_name('name')
-    path_rule.add_tag(tg1)
-    
+    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
+    path_rule.tags.append('name')
     return path_rule

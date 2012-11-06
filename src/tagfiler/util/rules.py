@@ -90,7 +90,7 @@ class RERuleProcessor(object):
 
     def extract_template(self, match):
         if match:
-            return dict([ (self.tags[i].get_tag_name(), set([self.rewrite(match.expand(self.templates[i].get_template()))]) ) for i in range(0, len(self.tags)) ])
+            return dict([ (self.tags[i], set([self.rewrite(match.expand(self.templates[i]))]) ) for i in range(0, len(self.tags)) ])
         else:
             return dict()
 

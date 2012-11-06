@@ -57,12 +57,8 @@ def create_default_name_path_rule(endpoint_name):
     path_rule = models.RERule()
     path_rule.pattern = '^(?P<path>.*)'
     path_rule.extract = 'template'
-    t1 = models.RERuleTemplate()
-    t1.set_template('file://%s\g<path>' % endpoint_name)
-    path_rule.templates.append(t1)
-    tg1 = models.RERuleTag()
-    tg1.set_tag_name('name')
-    path_rule.tags.append(tg1)
+    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
+    path_rule.tags.append('name')
     return path_rule
 
 
@@ -71,12 +67,8 @@ def create_path_rule(**kwargs):
     path_rule = models.RERule()
     path_rule.pattern = kwargs.get('pattern')
     path_rule.extract = kwargs.get('extract')
-    t1 = models.RERuleTemplate()
-    t1.set_template(kwargs.get('template'))
-    path_rule.templates.append(t1)
-    tg1 = models.RERuleTag()
-    tg1.set_tag_name(kwargs.get('name'))
-    path_rule.tags.append(tg1)
+    path_rule.templates.append(kwargs.get('template'))
+    path_rule.tags.append(kwargs.get('name'))
     return path_rule
 
 
