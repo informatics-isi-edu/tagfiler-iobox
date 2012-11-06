@@ -3,7 +3,7 @@ Created on Sep 19, 2012
 
 @author: smithd
 '''
-from tagfiler.iobox.models import RERule, LineRule, RegisterTag
+from tagfiler.iobox.models import RERule, RegisterTag
 import re
 
 class RERuleProcessor(object):

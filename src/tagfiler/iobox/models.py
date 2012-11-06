@@ -59,25 +59,8 @@ class LineRule(object):
         self.path_rule = None
         self.id = kwargs.get("id")
         self.name = kwargs.get("name")
-        self.rerules = []
-    def get_id(self):
-        return self.id
-    def set_id(self, i):
-        self.id = i
-    def get_name(self):
-        return self.name
-    def set_name(self, name):
-        self.name = name
-    def get_path_rule(self):
-        return self.path_rule
-    def set_path_rule(self, path_rule):
-        self.path_rule = path_rule
-    def get_rerules(self):
-        return self.rerules
-    def set_rerules(self, rerules):
-        self.rerules = rerules
-    def add_rerule(self, rerule):
-        self.rerules.append(rerule)
+        self.rerules = kwargs.get("rerules", [])
+        
 
 class RERuleComponent(object):
     """Abstract parent for components associated with a rerule.
