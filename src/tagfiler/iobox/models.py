@@ -53,57 +53,6 @@ class RERule(object):
         self.tags = []
         self.templates = []
 
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def set_name(self, name):
-        self.name = name
-    def get_name(self):
-        return self.name
-    def set_prepattern(self, prepattern):
-        self.prepattern = prepattern
-    def get_prepattern(self):
-        return self.prepattern
-    def set_pattern(self, pattern):
-        self.pattern = pattern
-    def get_pattern(self):
-        return self.pattern
-    def set_apply(self, a):
-        self.apply = a
-    def get_apply(self):
-        return self.apply
-    def set_extract(self, extract):
-        self.extract = extract
-    def get_extract(self):
-        return self.extract
-    def get_tags(self):
-        return self.tags
-    def set_tags(self, tags):
-        self.tags = tags
-    def add_tag(self, tag):
-        self.tags.append(tag)
-    def get_rewrites(self):
-        return self.rewrites
-    def set_rewrites(self, rewrites):
-        self.rewrites = rewrites
-    def add_rewrite(self, rewrite):
-        self.rewrites.append(rewrite)
-    def get_constants(self):
-        return self.constants
-    def set_constants(self, constants):
-        self.constants = constants
-    def add_constant(self, constant):
-        self.constants.append(constant)
-    def get_templates(self):
-        return self.templates
-    def set_templates(self, templates):
-        self.templates = templates
-    def add_template(self, template):
-        self.templates.append(template)
-
-class PathRule(RERule):
-    pass
 
 class LineRule(object):
     def __init__(self, **kwargs):
@@ -327,9 +276,9 @@ class RegisterTag(object):
 
 
 def create_default_name_path_rule(endpoint_name):
-    path_rule = PathRule()
-    path_rule.set_pattern('^(?P<path>.*)')
-    path_rule.set_extract('template')
+    path_rule = RERule()
+    path_rule.pattern = '^(?P<path>.*)'
+    path_rule.extract = 'template'
     t1 = RERuleTemplate()
     t1.set_template('file://%s\g<path>' % endpoint_name)
     path_rule.add_template(t1)

@@ -54,29 +54,29 @@ __LOGLEVEL_DEFAULT = 0
 
 def create_default_name_path_rule(endpoint_name):
     """Creates the path rule for the required 'name' tag."""
-    path_rule = models.PathRule()
-    path_rule.set_pattern('^(?P<path>.*)')
-    path_rule.set_extract('template')
+    path_rule = models.RERule()
+    path_rule.pattern = '^(?P<path>.*)'
+    path_rule.extract = 'template'
     t1 = models.RERuleTemplate()
     t1.set_template('file://%s\g<path>' % endpoint_name)
-    path_rule.add_template(t1)
+    path_rule.templates.append(t1)
     tg1 = models.RERuleTag()
     tg1.set_tag_name('name')
-    path_rule.add_tag(tg1)
+    path_rule.tags.append(tg1)
     return path_rule
 
 
 def create_path_rule(**kwargs):
     """Creates a path rule."""
-    path_rule = models.PathRule()
-    path_rule.set_pattern(kwargs.get('pattern'))
-    path_rule.set_extract(kwargs.get('extract'))
+    path_rule = models.RERule()
+    path_rule.pattern = kwargs.get('pattern')
+    path_rule.extract = kwargs.get('extract')
     t1 = models.RERuleTemplate()
     t1.set_template(kwargs.get('template'))
-    path_rule.add_template(t1)
+    path_rule.templates.append(t1)
     tg1 = models.RERuleTag()
     tg1.set_tag_name(kwargs.get('name'))
-    path_rule.add_tag(tg1)
+    path_rule.tags.append(tg1)
     return path_rule
 
 

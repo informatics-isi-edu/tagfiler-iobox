@@ -3,7 +3,7 @@ Created on Sep 19, 2012
 
 @author: smithd
 '''
-from tagfiler.iobox.models import PathRule, LineRule, RegisterTag
+from tagfiler.iobox.models import RERule, LineRule, RegisterTag
 import re
 
 class RERuleProcessor(object):
@@ -19,31 +19,31 @@ class RERuleProcessor(object):
         """
         self._rerule = rerule
         self.prepattern_processor = None
-        if self._rerule.get_prepattern() is not None:
+        if self._rerule.prepattern is not None:
             self.prepattern_processor = RERuleProcessor(self.get_prepattern())
-        self.pattern = re.compile(rerule.get_pattern())
+        self.pattern = re.compile(rerule.pattern)
 
         self.apply_func = dict(match=self.apply_match,
                           search=self.apply_search,
-                          finditer=self.apply_finditer)[rerule.get_apply()]
+                          finditer=self.apply_finditer)[rerule.apply]
 
         self.tester_func = dict(match=re.match,
                            search=re.search,
-                           finditer=re.search)[rerule.get_apply()]
+                           finditer=re.search)[rerule.apply]
 
         self.extract_func = dict(constants=self.extract_constant,
                             single=self.extract_single, 
                             positional=self.extract_positional,
                             named=self.extract_named,
-                            template=self.extract_template)[rerule.get_extract()]
+                            template=self.extract_template)[rerule.extract]
 
-        self.rewrites = [ (re.compile(r.get_rewrite_pattern()), r.get_rewrite_template()) for r in rerule.get_rewrites() ]
+        self.rewrites = [ (re.compile(r.get_rewrite_pattern()), r.get_rewrite_template()) for r in rerule.rewrites ]
 
-        self.constants = rerule.get_constants()
+        self.constants = rerule.constants
 
-        self.tags = rerule.get_tags()
+        self.tags = rerule.tags
 
-        self.templates = rerule.get_templates()
+        self.templates = rerule.templates
         
     def test(self, string):
         if self.prepattern and not self.prepattern.test(string):
@@ -134,7 +134,7 @@ class TagDirector(object):
                     fileobj.add_tag(t)
 
     def get_rule_processor(self, rule):
-        if isinstance(rule, PathRule):
+        if isinstance(rule, RERule):
             return PathRuleProcessor(rule)
         else:
             raise TypeError("Unsupported rule type for %s" % unicode(rule))
