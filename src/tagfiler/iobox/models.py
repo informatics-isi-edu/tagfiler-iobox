@@ -99,7 +99,7 @@ class File(object):
     def get_tag(self, tag_name):
         tag = []
         for t in self.tags:
-            if t.get_tag_name() == tag_name:
+            if t.name == tag_name:
                 tag.append(t)
         return tag
 
@@ -109,32 +109,20 @@ class File(object):
         s += " (%s %s %s %s %s) [" % (self.mtime, self.rtime, self.size, 
                                       self.username, self.groupname)
         for t in self.tags:
-            s += "%s=%s, " % (t.get_tag_name(), t.get_tag_value())
+            s += "%s, " % t
         s += "]"
         return s
 
 
 class RegisterTag(object):
-    """Tag that is assigned to a registered file.
-    
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.tag_name = kwargs.get("tag_name")
-        self.tag_value = kwargs.get("tag_value")
-        
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def get_tag_name(self):
-        return self.tag_name
-    def set_tag_name(self, tag_name):
-        self.tag_name = tag_name
-    def get_tag_value(self):
-        return self.tag_value
-    def set_tag_value(self, tag_value):
-        self.tag_value = tag_value
+    """Tag that is assigned to a registered file."""
+    def __init__(self, name=None, value=None, **kwargs):
+        self.name = name or kwargs.get("name")
+        self.value = value or kwargs.get("value")
+
+    def __str__(self):
+        s = "%s=%s" % (self.name, self.value)
+        return s
 
 
 class ScanState(object):

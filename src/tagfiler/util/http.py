@@ -109,12 +109,12 @@ class TagfilerClient(object):
                 raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
             parsed_dict = {}
             for tag in fileobj.get_tags():
-                tag_list = parsed_dict.get(tag.get_tag_name(), [])
-                tag_list.append(tag.get_tag_value())
-                parsed_dict[tag.get_tag_name()] = tag_list
-                if tag.get_tag_name() != "name":
-                    if tag.get_tag_name() not in tag_names:
-                        tag_names.append(tag.get_tag_name())
+                tag_list = parsed_dict.get(tag.name, [])
+                tag_list.append(tag.value)
+                parsed_dict[tag.name] = tag_list
+                if tag.name != "name":
+                    if tag.name not in tag_names:
+                        tag_names.append(tag.name)
             parsed_table.append(parsed_dict)
         payload = json.dumps(parsed_table)
         bulkurl = '%s/subject/name(%s)' % (self.baseuri, ';'.join([ self._safequote(tag) for tag in tag_names ]))
@@ -138,9 +138,9 @@ class TagfilerClient(object):
         # Remove the name tag from the file tags, since this is specified outside the query string
         tag_pairs = []
         for tag in fileobj.get_tags():
-            if tag.get_tag_name() != "name":
-                tag_pairs.append("%s=%s" % (self._safequote(tag.get_tag_name()), self._safequote(tag.get_tag_value())))
-        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(fileobj.get_tag("name")[0].get_tag_value()), "&".join(tag_pairs))
+            if tag.name != "name":
+                tag_pairs.append("%s=%s" % (self._safequote(tag.name), self._safequote(tag.value)))
+        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(fileobj.get_tag("name")[0].value), "&".join(tag_pairs))
         headers = {}
         headers["Cookie"] = self.cookie
         self._send_request("PUT", url, headers=headers)

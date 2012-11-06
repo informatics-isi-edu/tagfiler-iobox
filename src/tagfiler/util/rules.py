@@ -128,9 +128,7 @@ class TagDirector(object):
             tag_dict = self.get_rule_processor(rule).analyze(fileobj.filename)
             for k,v_list in tag_dict.iteritems():
                 for v in v_list:
-                    t = RegisterTag()
-                    t.set_tag_name(k)
-                    t.set_tag_value(v)
+                    t = RegisterTag(name=k, value=v)
                     fileobj.add_tag(t)
 
     def get_rule_processor(self, rule):
