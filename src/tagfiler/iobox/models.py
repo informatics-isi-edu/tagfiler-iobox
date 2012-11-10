@@ -74,6 +74,7 @@ class File(object):
     """File statistics that describe a file retrieved during scan or register.
     """
     
+    # File status flag values
     COMPUTE     = 0
     COMPARE     = 1
     REGISTER    = 2
@@ -123,64 +124,3 @@ class RegisterTag(object):
     def __str__(self):
         s = "%s=%s" % (self.name, self.value)
         return s
-
-
-class ScanState(object):
-    """Current state of a scan.
-    """
-    
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("scan_state_id")
-        self.state = kwargs.get("state")
-    def set_id(self, i):
-        self.id = i
-    def get_id(self):
-        return self.id
-    def set_state(self, state):
-        self.state = state
-    def get_state(self):
-        return self.state
-
-
-class Scan(object):
-    """File scan that maintains information about its start/end time, current state, and files.
-
-    """
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.start = kwargs.get("start")
-        self.end = kwargs.get("end")
-        self.state = ScanState(**kwargs)
-        self.files = []
-
-    def set_id(self, i):
-        self.id = id
-    def get_id(self):
-        return self.id
-    def set_start(self, start):
-        self.start = start
-    def get_start(self):
-        return self.start
-    def set_end(self, end):
-        self.end = end
-    def get_end(self):
-        return self.end
-    def set_state(self, state):
-        self.state = state
-    def get_state(self):
-        return self.state
-    def get_files(self):
-        return self.files
-    def set_files(self, files):
-        self.files = files
-    def add_file(self, f):
-        self.files.append(f)
-
-
-def create_default_name_path_rule(endpoint_name):
-    path_rule = RERule()
-    path_rule.pattern = '^(?P<path>.*)'
-    path_rule.extract = 'template'
-    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
-    path_rule.tags.append('name')
-    return path_rule
