@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 class TagfilerClient(object):
     """Web service client used to interact with the Tagfiler REST service.
     """
+
     def __init__(self, url, username, password=None):
         """Initializes the Tagfiler client object.
         """
@@ -61,12 +62,14 @@ class TagfilerClient(object):
         self.connection = None
         self.cookie = None
 
+
     def connect(self):
         """Connects to the Tagfiler service."""
         #TODO: catch/raise http exceptions
         #TODO: throw exception if connection is not None!
         self.connection = self.connection_class(host=self.host, port=self.port)
-    
+
+
     def login(self):
         """Login to the Tagfiler service."""
         #TODO: catch/raise http exceptions
@@ -77,7 +80,8 @@ class TagfilerClient(object):
                                   "username=%s&password=%s" % \
                                   (self.username, self.password), headers)
         self.cookie = resp.getheader("set-cookie")
-    
+
+
     def close(self):
         """Closes the connection to the Tagfiler service."""
         #TODO: catch/raise http exceptions
@@ -85,14 +89,16 @@ class TagfilerClient(object):
         self.connection.close()
         self.connection = None
         self.cookie = None
-    
+
+
     def _send_request(self, method, url, body='', headers={}):
         self.connection.request(method, url, body, headers)
         resp = self.connection.getresponse()
         if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
             raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
         return resp
-    
+
+
     def add_subjects(self, fileobjs):
         """Registers a list of files and tags in tagfiler using a single request.
         
@@ -105,10 +111,10 @@ class TagfilerClient(object):
         tag_names = []
         for fileobj in fileobjs:
             # name is a required tag
-            if fileobj.get_tag("name") is None or len(fileobj.get_tag("name")) == 0:
+            if not len(fileobj.filter_tags("name")):
                 raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
             parsed_dict = {}
-            for tag in fileobj.get_tags():
+            for tag in fileobj.tags:
                 tag_list = parsed_dict.get(tag.name, [])
                 tag_list.append(tag.value)
                 parsed_dict[tag.name] = tag_list
@@ -123,6 +129,7 @@ class TagfilerClient(object):
         headers["Cookie"] = self.cookie
         self._send_request("PUT", bulkurl, payload, headers)
 
+
     def add_subject(self, fileobj):
         """Registers a single file in tagfiler
         
@@ -132,18 +139,20 @@ class TagfilerClient(object):
         assert isinstance(fileobj, File)
 
         # name is a required tag
-        if fileobj.get_tag("name") is None or len(fileobj.get_tag("name")) == 0:
+        if not len(fileobj.filter_tags("name")):
             raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
 
         # Remove the name tag from the file tags, since this is specified outside the query string
         tag_pairs = []
-        for tag in fileobj.get_tags():
+        for tag in fileobj.tags:
             if tag.name != "name":
                 tag_pairs.append("%s=%s" % (self._safequote(tag.name), self._safequote(tag.value)))
-        url = "%s/subject/name=%s?%s" % (self.baseuri, self._safequote(fileobj.get_tag("name")[0].value), "&".join(tag_pairs))
+        url = "%s/subject/name=%s?%s" % (self.baseuri, 
+                    self._safequote(fileobj.filter_tags("name")[0].value), "&".join(tag_pairs))
         headers = {}
         headers["Cookie"] = self.cookie
         self._send_request("PUT", url, headers=headers)
+
 
     def find_subject_by_name(self, name):
         """Looks up a subject by its name tag in tagfiler and returns a dictionary if found, None otherwise
@@ -163,6 +172,7 @@ class TagfilerClient(object):
         except HTTPException,e:
             logger.error(e)
         return subject
+
 
     def _safequote(self, s):
         return urllib.quote(s, '')

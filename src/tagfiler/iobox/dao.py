@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 """
-The data access object (DAO) module.
+The data access object (DAO) class definitions.
 """
 
 import sqlite3

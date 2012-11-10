@@ -1,15 +1,27 @@
-'''
-Created on Sep 19, 2012
+# 
+# Copyright 2010 University of Southern California
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#    http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""The rule processor and supporting class definitions."""
 
-@author: smithd
-'''
-from tagfiler.iobox.models import RERule, RegisterTag
+from tagfiler.iobox.models import RERule, Tag
 import re
 
+
 class RERuleProcessor(object):
-    """Processes a rerule object into tags.
+    """Processes a rerule object into tags."""
     
-    """
     def __init__(self, rerule):
         """Constructor
         
@@ -118,9 +130,11 @@ class RERuleProcessor(object):
             dictmerge(tags, self.extract_func(match))
         return tags
 
+
 class PathRuleProcessor(RERuleProcessor):
     def analyze(self, file_path):
         return super(PathRuleProcessor, self).analyze(file_path)
+
 
 class TagDirector(object):
     def tag_registered_file(self, rules, fileobj):
@@ -128,8 +142,8 @@ class TagDirector(object):
             tag_dict = self.get_rule_processor(rule).analyze(fileobj.filename)
             for k,v_list in tag_dict.iteritems():
                 for v in v_list:
-                    t = RegisterTag(name=k, value=v)
-                    fileobj.add_tag(t)
+                    t = Tag(name=k, value=v)
+                    fileobj.tags.append(t)
 
     def get_rule_processor(self, rule):
         if isinstance(rule, RERule):

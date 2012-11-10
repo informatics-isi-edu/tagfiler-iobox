@@ -14,14 +14,12 @@
 # limitations under the License.
 #
 """
-Model classes for representing state in the Outbox.
+Models for Outbox configuration and local state.
 """
 
-
 class Outbox(object):
-    """Outbox configuration object that retains information about its 
-    tagfiler, roots, inclusion/exclusion patterns, path/line matches.
-    """
+    """Represents the Outbox configuration."""
+
     def __init__(self, **kwargs):
         self.name = kwargs.get("name")
         self.state_db = kwargs.get("state_db")
@@ -38,7 +36,7 @@ class Outbox(object):
 
 
 class RERule(object):
-    """Regular expression used in an outbox for tagging."""
+    """A regular expression rule used for tagging."""
     def __init__(self, **kwargs):
         self.prepattern = kwargs.get("prepattern")
         self.pattern = kwargs.get("pattern")
@@ -51,28 +49,28 @@ class RERule(object):
 
 
 class LineRule(object):
+    """A regular expression rule used for tagging based on file contents."""
     def __init__(self, **kwargs):
         self.path_rule = kwargs.get("path_rule")
         self.rerules = kwargs.get("rerules", [])
 
 
 class RERuleConstant(object):
-    """Constant assigned to a rerule."""
+    """A constant assigned to a rerule."""
     def __init__(self, **kwargs):
         self.name = kwargs.get("name")
         self.value = kwargs.get("value")        
 
 
 class RERuleRewrite(object):
-    """Rewrite patterns and templates for a rerule."""
+    """A rewrite pattern and template for a rerule."""
     def __init__(self, **kwargs):
         self.pattern = kwargs.get("pattern")
         self.template = kwargs.get("template")
 
 
 class File(object):
-    """File statistics that describe a file retrieved during scan or register.
-    """
+    """Represents a File."""
     
     # File status flag values
     COMPUTE     = 0
@@ -91,18 +89,8 @@ class File(object):
         self.tags = kwargs.get("tags", [])
         self.status = kwargs.get("status")
         
-    def get_tags(self):
-        return self.tags
-    def set_tags(self, tags):
-        self.tags = tags
-    def add_tag(self, tag):
-        self.tags.append(tag)
-    def get_tag(self, tag_name):
-        tag = []
-        for t in self.tags:
-            if t.name == tag_name:
-                tag.append(t)
-        return tag
+    def filter_tags(self, name):
+        return [tag for tag in self.tags if tag.name == name]
 
     def __str__(self):
         s = self.filename
@@ -115,8 +103,9 @@ class File(object):
         return s
 
 
-class RegisterTag(object):
-    """Tag that is assigned to a registered file."""
+class Tag(object):
+    """Represents a Tag."""
+    
     def __init__(self, name=None, value=None, **kwargs):
         self.name = name or kwargs.get("name")
         self.value = value or kwargs.get("value")
