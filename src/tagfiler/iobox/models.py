@@ -37,15 +37,25 @@ class Outbox(object):
 
 class RERule(object):
     """A regular expression rule used for tagging."""
+    
     def __init__(self, **kwargs):
+        
         self.prepattern = kwargs.get("prepattern")
         self.pattern = kwargs.get("pattern")
         self.apply = kwargs.get("apply", "match")
         self.extract = kwargs.get("extract", "single")
-        self.tags = kwargs.get("tags", [])
-        self.templates = kwargs.get("templates", [])
         self.rewrites = kwargs.get("rewrites", [])
         self.constants = kwargs.get("constants", [])
+        
+        self.tags = kwargs.get("tags", [])
+        tag = kwargs.get("tag")
+        if tag:
+            self.tags.append(tag)
+            
+        self.templates = kwargs.get("templates", [])
+        template = kwargs.get("template")
+        if template:
+            self.templates.append(template)
 
 
 class LineRule(object):

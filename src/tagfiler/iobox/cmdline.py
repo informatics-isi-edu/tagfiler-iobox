@@ -17,9 +17,9 @@
 Command-line interface for the Tagfiler Outbox.
 """
 
-import models
 import outbox
 import version
+from models import RERule, Outbox
 
 import os
 import logging
@@ -54,21 +54,11 @@ __LOGLEVEL_DEFAULT = 0
 
 def create_default_name_path_rule(endpoint_name):
     """Creates the path rule for the required 'name' tag."""
-    path_rule = models.RERule()
+    path_rule = RERule()
     path_rule.pattern = '^(?P<path>.*)'
     path_rule.extract = 'template'
     path_rule.templates.append('file://%s\g<path>' % endpoint_name)
     path_rule.tags.append('name')
-    return path_rule
-
-
-def create_path_rule(**kwargs):
-    """Creates a path rule."""
-    path_rule = models.RERule()
-    path_rule.pattern = kwargs.get('pattern')
-    path_rule.extract = kwargs.get('extract')
-    path_rule.templates.append(kwargs.get('template'))
-    path_rule.tags.append(kwargs.get('name'))
     return path_rule
 
 
@@ -164,7 +154,7 @@ def main(args=None):
             f.close()
     
     # Create outbox model, and populate from settings
-    outbox_model = models.Outbox()
+    outbox_model = Outbox()
     outbox_model.name = args.name or cfg.get('name', __DEFAULT_OUTBOX_NAME)
     outbox_model.state_db = args.state_db or \
                             cfg.get('state_db', default_state_db)
@@ -191,7 +181,7 @@ def main(args=None):
     roots = args.root or cfg.get('roots')
     for root in roots:
         outbox_model.roots.append(root)
-    if len(roots) == 0:
+    if not len(roots):
         parser.error('Must specify at least one root directory.')
     
     # Add include/exclusion patterns
@@ -208,10 +198,9 @@ def main(args=None):
     outbox_model.path_rules.append(name_rule)
     
     # Add optional path rules
-    pathrules = cfg.get('rules', [])
-    for pathrule in pathrules:
-        path_rule = create_path_rule(**pathrule)
-        outbox_model.path_rules.append(path_rule)
+    rules = cfg.get('rules', [])
+    for rule in rules:
+        outbox_model.path_rules.append(RERule(**rule))
 
     # Now, create the outbox manager and let it run to completion
     outbox_manager = outbox.Outbox(outbox_model)
