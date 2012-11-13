@@ -19,11 +19,12 @@ Tagfiler client.
 
 from tagfiler.iobox.models import File
 
+from httplib import HTTPConnection, HTTPSConnection, HTTPException
+from httplib import OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER, NOT_FOUND
 import urlparse
 import urllib
 import logging
-from httplib import HTTPConnection, HTTPSConnection, HTTPException
-from httplib import OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER
+import socket
 
 try:
     import simplejson #@UnresolvedImport
@@ -36,6 +37,29 @@ except:
 logger = logging.getLogger(__name__)
 
 
+class BaseError(Exception):
+    def __init__(self, value, cause=None):
+        self.value = value
+        self.cause = cause
+        
+    def __str__(self):
+        return self.value
+
+
+class AddressError(BaseError):
+    """AddressError indicates a failure to resolve the network address of the 
+    Tagfiler service.
+    
+    This error is raised when a low-level socket.gaierror is caught.
+    """
+    pass
+
+
+class NotFoundError(BaseError):
+    """Raised for httplib.NOT_FOUND responses."""
+    pass
+
+
 class TagfilerClient(object):
     """Web service client used to interact with the Tagfiler REST service.
     """
@@ -43,7 +67,7 @@ class TagfilerClient(object):
     def __init__(self, url, username, password=None):
         """Initializes the Tagfiler client object.
         """
-        pieces = urlparse.urlparse(url)
+        pieces = urlparse.urlparse(url) #TODO: does this throw exceptions?!
         
         self.scheme = pieces[0]
         host_port = pieces[1].split(":")
@@ -65,27 +89,34 @@ class TagfilerClient(object):
 
     def connect(self):
         """Connects to the Tagfiler service."""
-        #TODO: catch/raise http exceptions
-        #TODO: throw exception if connection is not None!
+        assert not self.connection
         self.connection = self.connection_class(host=self.host, port=self.port)
 
 
     def login(self):
-        """Login to the Tagfiler service."""
-        #TODO: catch/raise http exceptions
-        #TODO: throw exception if connection is None!
+        """Login to the Tagfiler service.
+        
+        Raises 'AddressError' if unable to resolve the hostname.
+        
+        Raises 'NotFoundError' if the Tagfiler login resource is not found.
+        """
+        assert self.connection
         headers = {}
         headers["Content-Type"] = "application/x-www-form-urlencoded"
-        resp = self._send_request("POST", "/webauthn/login", 
-                                  "username=%s&password=%s" % \
-                                  (self.username, self.password), headers)
-        self.cookie = resp.getheader("set-cookie")
+        try:
+            resp = self._send_request("POST", "/webauthn/login", 
+                                      "username=%s&password=%s" % \
+                                      (self.username, self.password), headers)
+            self.cookie = resp.getheader("set-cookie")
+        except socket.gaierror as e:
+            raise AddressError("Unable to resolve hostname. Check network connection or configuration.", e)
+        except NotFoundError as e:
+            raise
 
 
     def close(self):
         """Closes the connection to the Tagfiler service."""
-        #TODO: catch/raise http exceptions
-        #TODO: throw exception if connection is None!
+        assert self.connection
         self.connection.close()
         self.connection = None
         self.cookie = None
@@ -95,7 +126,13 @@ class TagfilerClient(object):
         self.connection.request(method, url, body, headers)
         resp = self.connection.getresponse()
         if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
-            raise HTTPException("Error response (%i) received: %s" % (resp.status, resp.read()))
+            if resp.status == NOT_FOUND:
+                raise NotFoundError("Service not found",
+                                    "Error response (%i) received: %s" % 
+                                    (resp.status, resp.read()))
+            else:
+                raise HTTPException("Error response (%i) received: %s" % 
+                                    (resp.status, resp.read()))
         return resp
 
 
@@ -170,6 +207,8 @@ class TagfilerClient(object):
             resp = self._send_request("GET", url, headers=headers)
             subject = json.loads(resp.read())
         except HTTPException,e:
+            logger.error(e)
+        except NotFoundError,e:
             logger.error(e)
         return subject
 

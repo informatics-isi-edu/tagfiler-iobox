@@ -132,7 +132,10 @@ class Worker(threading.Thread):
         """Subclasses of Worker should not override this method."""
         
         logger.debug('run:BEGIN')
-        self.on_start()
+        error = self.on_start()
+        if error:
+            self._work_done(error)
+            return
 
         while not self._terminate:
             task = self._tasks.get()

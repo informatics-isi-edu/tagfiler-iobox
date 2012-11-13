@@ -72,7 +72,14 @@ class Dispatcher(Worker):
         logger.debug("do_work: %s" % task)
         
         #
-        # Process control flow flags, first
+        # Process errors first
+        #
+        if isinstance(task, Exception):
+            logger.error(task)
+            return
+        
+        #
+        # Process control flow flags
         #
         if task is outbox.Outbox._FIND_DONE:
             self._sumq.put(outbox.Outbox._SUM_DONE)

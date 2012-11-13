@@ -19,7 +19,7 @@ Implements the registration stage of the Outbox.
 
 from worker import Worker
 from models import File
-from tagfiler.util.http import TagfilerClient
+from tagfiler.util.http import TagfilerClient, AddressError, NotFoundError
 import outbox
 
 import time
@@ -52,8 +52,15 @@ class Register(Worker):
             work_done(task)
         
     def on_start(self):
-        self._client.connect()
-        self._client.login()
+        error = None
+        try:
+            self._client.connect()
+            self._client.login()
+        except AddressError as e:
+            error = e
+        except NotFoundError as e:
+            error = e
+        return error
     
     def on_terminate(self, work_done):
         self._client.close()
