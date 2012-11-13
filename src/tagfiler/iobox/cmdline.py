@@ -20,6 +20,7 @@ Command-line interface for the Tagfiler Outbox.
 import outbox
 import version
 from models import RERule, Outbox
+from tagfiler.util.http import TagfilerClient, AddressError, NetworkError, NotFoundError
 
 import os
 import logging
@@ -202,8 +203,24 @@ def main(args=None):
     for rule in rules:
         outbox_model.path_rules.append(RERule(**rule))
 
+    # Establish Tagfiler client connection
+    client = TagfilerClient(outbox_model.url, outbox_model.username, 
+                            outbox_model.password)
+    try:
+        client.connect()
+        client.login()
+    except AddressError as err:
+        logger.error(err)
+        return __EXIT_FAILURE
+    except NetworkError as err:
+        logger.error(err)
+        return __EXIT_FAILURE
+    except NotFoundError as err:
+        logger.error(err)
+        return __EXIT_FAILURE
+    
     # Now, create the outbox manager and let it run to completion
-    outbox_manager = outbox.Outbox(outbox_model)
+    outbox_manager = outbox.Outbox(outbox_model, client)
     outbox_manager.start()
     outbox_manager.done()
     outbox_manager.wait_done()
@@ -212,4 +229,5 @@ def main(args=None):
     while not outbox_manager.is_alive():
         time.sleep(1) # TODO: Maybe should implement another callback in outbox...
         
+    client.close()
     return __EXIT_SUCCESS

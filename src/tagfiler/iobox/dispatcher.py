@@ -72,13 +72,6 @@ class Dispatcher(Worker):
         logger.debug("do_work: %s" % task)
         
         #
-        # Process errors first
-        #
-        if isinstance(task, Exception):
-            logger.error(task)
-            return
-        
-        #
         # Process control flow flags
         #
         if task is outbox.Outbox._FIND_DONE:

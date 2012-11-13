@@ -36,7 +36,7 @@ class Outbox():
     _TAG_DONE   =   'TAG_DONE'
     _REG_DONE   =   'REG_DONE'
     
-    def __init__(self, outbox_model):
+    def __init__(self, outbox_model, client):
         """Initializes the Outbox.
         
         The 'outbox_model' parameter is an instance of models.Outbox.
@@ -75,10 +75,7 @@ class Outbox():
         
         self._register = register.Register(
                                     self._register_q, self._dispatch_q,
-                                    self._model.url,
-                                    self._model.username,
-                                    self._model.password,
-                                    self._model.bulk_ops_max)
+                                    client, self._model.bulk_ops_max)
         
         self._dispatcher = dispatcher.Dispatcher(self._model.state_db,
                                                  self._dispatch_q, 

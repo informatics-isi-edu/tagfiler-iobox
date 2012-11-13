@@ -43,7 +43,10 @@ class BaseError(Exception):
         self.cause = cause
         
     def __str__(self):
-        return self.value
+        message = "%s." % self.value
+        if self.cause:
+            message += " Caused by: %s." % self.cause
+        return message
 
 
 class AddressError(BaseError):
@@ -52,11 +55,19 @@ class AddressError(BaseError):
     
     This error is raised when a low-level socket.gaierror is caught.
     """
-    pass
+    def __init__(self, cause=None):
+        super(AddressError, self).__init__("Could not resolve hostname", cause)
 
+class NetworkError(BaseError):
+    """IOError wraps a socket.error exception.
+    
+    This error is raised when a low-level socket.error is caught.
+    """
+    def __init__(self, cause=None):
+        super(NetworkError, self).__init__("Network I/O failure", cause)
 
 class NotFoundError(BaseError):
-    """Raised for httplib.NOT_FOUND responses."""
+    """Raised for HTTP NOT_FOUND (i.e., ERROR 404) responses."""
     pass
 
 
@@ -109,7 +120,9 @@ class TagfilerClient(object):
                                       (self.username, self.password), headers)
             self.cookie = resp.getheader("set-cookie")
         except socket.gaierror as e:
-            raise AddressError("Unable to resolve hostname. Check network connection or configuration.", e)
+            raise AddressError(e)
+        except socket.error as e:
+            raise NetworkError(e)
         except NotFoundError as e:
             raise
 
@@ -127,9 +140,8 @@ class TagfilerClient(object):
         resp = self.connection.getresponse()
         if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
             if resp.status == NOT_FOUND:
-                raise NotFoundError("Service not found",
-                                    "Error response (%i) received: %s" % 
-                                    (resp.status, resp.read()))
+                raise NotFoundError("Tagfiler not found at specified URL",
+                                    "[HTTP Error %d] Not Found" % resp.status)
             else:
                 raise HTTPException("Error response (%i) received: %s" % 
                                     (resp.status, resp.read()))
