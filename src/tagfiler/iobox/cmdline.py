@@ -224,10 +224,12 @@ def main(args=None):
     outbox_manager.start()
     outbox_manager.done()
     outbox_manager.wait_done()
-    logger.debug("done")
     outbox_manager.terminate()
     while not outbox_manager.is_alive():
         time.sleep(1) # TODO: Maybe should implement another callback in outbox...
-        
-    client.close()
+    
+    try:
+        client.close()
+    except NetworkError as e:
+        logger.warn(e)
     return __EXIT_SUCCESS

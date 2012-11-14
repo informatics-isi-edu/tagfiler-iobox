@@ -128,11 +128,20 @@ class TagfilerClient(object):
 
 
     def close(self):
-        """Closes the connection to the Tagfiler service."""
+        """Closes the connection to the Tagfiler service.
+        
+        The underlying python documentation is not very helpful but it would
+        appear that the HTTP[S]Connection.close() could raise a socket.error.
+        Thus, this method potentially raises a 'NetworkError'.
+        """
         assert self.connection
-        self.connection.close()
-        self.connection = None
-        self.cookie = None
+        try:
+            self.connection.close()
+        except socket.error as e:
+            raise NetworkError(e)
+        finally:
+            self.connection = None
+            self.cookie = None
 
 
     def _send_request(self, method, url, body='', headers={}):
