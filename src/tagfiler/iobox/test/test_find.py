@@ -53,9 +53,7 @@ class FindTest(base.OutboxBaseTestCase):
         tag_q = worker.WorkQueue()
     
         for rootdir in self.rootdirs:
-            root = models.Root()
-            root.set_filepath(rootdir)
-            find_q.put(root)
+            find_q.put(rootdir)
         
         find_worker = find.Find(find_q, tag_q)
         find_worker.start()
