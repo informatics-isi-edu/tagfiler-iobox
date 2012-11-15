@@ -19,7 +19,7 @@ Command-line interface for the Tagfiler Outbox.
 
 import outbox
 import version
-from models import RERule, Outbox
+from models import RERule, Outbox, create_default_name_path_rule
 from tagfiler.util.http import TagfilerClient, AddressError, NetworkError, NotFoundError
 
 import os
@@ -51,16 +51,6 @@ __LOGLEVEL = {0: logging.ERROR,
               3: logging.DEBUG}
 __LOGLEVEL_MAX = 3
 __LOGLEVEL_DEFAULT = 0
-
-
-def create_default_name_path_rule(endpoint_name):
-    """Creates the path rule for the required 'name' tag."""
-    path_rule = RERule()
-    path_rule.pattern = '^(?P<path>.*)'
-    path_rule.extract = 'template'
-    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
-    path_rule.tags.append('name')
-    return path_rule
 
 
 def main(args=None):

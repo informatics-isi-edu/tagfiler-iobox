@@ -123,3 +123,13 @@ class Tag(object):
     def __str__(self):
         s = "%s=%s" % (self.name, self.value)
         return s
+
+
+def create_default_name_path_rule(endpoint_name):
+    """Creates the path rule for the required 'name' tag."""
+    path_rule = RERule()
+    path_rule.pattern = '^(?P<path>.*)'
+    path_rule.extract = 'template'
+    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
+    path_rule.tags.append('name')
+    return path_rule

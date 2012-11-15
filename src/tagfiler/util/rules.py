@@ -89,7 +89,7 @@ class RERuleProcessor(object):
 
     def extract_positional(self, match):
         if match:
-            return dict([ (self.tags[i].get_tag_name(), set( [self.rewrite(match.group(i+1))] )) for i in range(0, len(self.tags))
+            return dict([ (self.tags[i], set( [self.rewrite(match.group(i+1))] )) for i in range(0, len(self.tags))
                           if self.tags[i] and self.rewrite(match.group(i+1)) ])
         else:
             return dict()

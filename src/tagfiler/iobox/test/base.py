@@ -17,7 +17,7 @@
 Shared utilities for Outbox TestCases.
 """
 
-from tagfiler.iobox import models
+from tagfiler.iobox.models import Outbox, RERule
 
 import unittest
 import logging
@@ -30,25 +30,26 @@ logger = logging.getLogger(__name__)
 test_endpoint_name = "smithd#tagfiler_ep"
 
 def create_test_outbox():
-    outbox = models.Outbox()
-    outbox.set_name('test_outbox')
-    tagfiler = models.Tagfiler()
-    tagfiler.set_url('https://curiosity.isi.edu/tagfiler')
-    tagfiler.set_username('demo')
-    tagfiler.set_password('demo')
-    outbox.set_tagfiler(tagfiler)
+    outbox = Outbox()
+    outbox.name = 'test_outbox'
+    outbox.url = 'https://curiosity.isi.edu/tagfiler'
+    outbox.username = 'demo'
+    outbox.password = 'demo'
     return outbox
 
 def create_temp_dirtree(numroots, numdirs, numfiles):
     """Creates a temporary directory and returns a list of root 'dirs'."""
     rootdirs = []
     for r in range(numroots):
+        r # is not used
         rootdir = tempfile.mkdtemp()
         logger.debug("create_temp_dirtree: %s" % rootdir)
         rootdirs.append(rootdir)
         for i in range(numdirs):
+            i # is not used
             currdir = tempfile.mkdtemp(dir=rootdir)
             for j in range(numfiles):
+                j # is not used
                 tempfile.mkstemp(dir=currdir)
                 
     return rootdirs
@@ -60,15 +61,10 @@ def remove_temp_dirtree(dirs=[]):
         shutil.rmtree(rootdir, ignore_errors=True)
 
 def create_date_and_study_path_rule():
-    path_rule = models.PathRule()
-    path_rule.set_pattern('^/.*/studies/([^/]+)/([^/]+)/')
-    path_rule.set_extract('positional')
-    date_tag = models.RERuleTag()
-    date_tag.set_tag_name('date')
-    session_tag = models.RERuleTag()
-    session_tag.set_tag_name('session')
-    path_rule.set_tags([date_tag, session_tag])
-        
+    path_rule = RERule()
+    path_rule.pattern = '^/.*/studies/([^/]+)/([^/]+)/'
+    path_rule.extract = 'positional'
+    path_rule.tags = ['date', 'session']
     return path_rule
 
 class OutboxBaseTestCase(unittest.TestCase):
@@ -116,9 +112,7 @@ class OutboxBaseTestCase(unittest.TestCase):
         
         # Add the roots to the Outbox model object
         for rootdir in self.rootdirs:
-            root = models.Root()
-            root.set_filepath(rootdir)
-            self.outbox_model.add_root(root)
+            self.outbox_model.roots.append(rootdir)
     
     def tearDown(self):
         """Subclasses should do class specific teardown before calling this 
