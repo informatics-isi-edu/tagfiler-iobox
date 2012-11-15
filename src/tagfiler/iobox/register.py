@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Register(Worker):
     """The registration pipeline worker."""
     
-    def __init__(self, tasks, results, client, bulk_ops_max):
+    def __init__(self, tasks, results, client, bulk_ops_max=0):
         super(Register, self).__init__(tasks, results)
         self._client = client
         self._bulk_ops_max = bulk_ops_max
