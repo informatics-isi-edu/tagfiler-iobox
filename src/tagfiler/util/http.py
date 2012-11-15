@@ -149,7 +149,7 @@ class TagfilerClient(object):
         resp = self.connection.getresponse()
         if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
             if resp.status == NOT_FOUND:
-                raise NotFoundError("Tagfiler not found at specified URL",
+                raise NotFoundError("Resource not found at specified URL",
                                     "[HTTP Error %d] Not Found" % resp.status)
             else:
                 raise HTTPException("Error response (%i) received: %s" % 

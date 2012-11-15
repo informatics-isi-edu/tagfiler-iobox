@@ -18,6 +18,7 @@ Shared utilities for Outbox TestCases.
 """
 
 from tagfiler.iobox.models import Outbox, RERule
+from tagfiler.util.http import TagfilerClient
 
 import unittest
 import logging
@@ -36,6 +37,13 @@ def create_test_outbox():
     outbox.username = 'demo'
     outbox.password = 'demo'
     return outbox
+
+def create_test_client(outbox_model):
+    client = TagfilerClient(outbox_model.url, outbox_model.username, 
+                                 outbox_model.password)
+    client.connect()
+    client.login()
+    return client
 
 def create_temp_dirtree(numroots, numdirs, numfiles):
     """Creates a temporary directory and returns a list of root 'dirs'."""

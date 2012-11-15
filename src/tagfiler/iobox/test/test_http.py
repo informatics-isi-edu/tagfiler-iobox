@@ -17,74 +17,88 @@
 Unit tests for the http module.
 """
 
-from tagfiler.iobox.models import RegisterTag, File
-from tagfiler.util.http import TagfilerClient
+from tagfiler.iobox.models import File, Tag
 import base
 
+import random
 import unittest
 
 
 def all_tests():
     """Returns a TestSuite that includes all test cases in this module."""
     suite = unittest.TestSuite()
-#    suite.addTest(TagfilerAddAndFindSubjectsTest())
+    suite.addTest(TagfilerAddAndFindSubjectsTest())
 #    suite.addTest(TagfilerAddSubjectsTest())
     return suite
 
 
-class TagfilerAddAndFindSubjectsTest(base.OutboxBaseTestCase):
+class TagfilerAddAndFindSubjectsTest(unittest.TestCase):
+
+    def setUp(self):
+        outbox_model = base.create_test_outbox()
+        self.client = base.create_test_client(outbox_model)
+    
+    def tearDown(self):
+        self.client.close()
         
     def runTest(self):
-        import random
         f = File()
-        f.set_filepath("/home/smithd/tagfiler_test%s.jpg" % unicode(random.random()))
-        f.set_size(100)
-        self.state_dao.add_file(f)
-        register_file = self.state_dao.register_file(f)
-        t = RegisterTag()
-        t.set_tag_name("name")
-        name = "file://smithd#tagfiler_ep%s" % f.get_filepath()
-        t.set_tag_value(name)
-        self.state_dao.add_tag_to_registered_file(register_file, t)
-        t = RegisterTag()
-        t.set_tag_name("session")
-        t.set_tag_value("session9")
-        self.state_dao.add_tag_to_registered_file(register_file, t)
-        t = RegisterTag()
-        t.set_tag_name("sha256sum")
-        t.set_tag_value("53534mnl5k34n5l34kn5")
-        self.state_dao.add_tag_to_registered_file(register_file, t)
+        f.filename = "/home/demo/tagfiler_test%s.jpg" % unicode(random.randint(0,10000))
+        f.size = 100
         
-        tagfiler_client = TagfilerClient(config=self.outbox_model.get_tagfiler())
-        tagfiler_client.add_subject(register_file)
+        t = Tag()
+        t.name = "name"
+        name = "file://demo#tagfiler_ep%s" % f.filename
+        t.value = name
+        f.tags.append(t)
         
-        result = tagfiler_client.find_subject_by_name(name)
+        t = Tag()
+        t.name = "session"
+        t.value = "session9"
+        f.tags.append(t)
+        
+        t = Tag()
+        t.name = "sha256sum"
+        t.value = "53534mnl5k34n5l34kn5"
+        f.tags.append(t)
+        
+        self.client.add_subject(f)
+        result = self.client.find_subject_by_name(name)
+        
         assert result is not None
         assert result[0]['name'] == name
 
 
 class TagfilerAddSubjectsTest(base.OutboxBaseTestCase):
+
+    def setUp(self):
+        outbox_model = base.create_test_outbox()
+        self.client = base.create_test_client(outbox_model)
+    
+    def tearDown(self):
+        self.client.close()
         
     def runTest(self):
-        import random
         files = []
         for i in range(1, 10):
+            i # is not used
             f = File()
-            f.set_filepath("/home/smithd/tagfiler_test%s.jpg" % unicode(random.random()))
-            f.set_size(100)
-            self.state_dao.add_file(f)
-            register_file = self.state_dao.register_file(f)
-            t = RegisterTag()
-            t.set_tag_name("name")
-            t.set_tag_value("file://smithd#tagfiler_ep%s" % f.get_filepath())
-            self.state_dao.add_tag_to_registered_file(register_file, t)
-            t = RegisterTag()
-            t.set_tag_name("session")
-            t.set_tag_value("session9")
-            self.state_dao.add_tag_to_registered_file(register_file, t)
-            files.append(register_file)
-        tagfiler_client = TagfilerClient(config=self.outbox_model.get_tagfiler())
-        tagfiler_client.add_subjects(files)
+            f.filename = "/home/demo/tagfiler_test%s.jpg" % unicode(random.randint(0,10000))
+            f.size = 100
+            
+            t = Tag()
+            t.name = "name"
+            t.value = "file://demo#tagfiler_ep%s" % f.filename
+            f.tags.append(t)
+            
+            t = Tag()
+            t.name = "session"
+            t.value = "session9"
+            f.tags.append(t)
+            
+            files.append(f)
+            
+        self.client.add_subjects(files)
 
 
 if __name__ == "__main__":

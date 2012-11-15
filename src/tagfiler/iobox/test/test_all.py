@@ -17,7 +17,7 @@
 All unit tests coverage.
 """
 
-import test_worker, test_rules, test_files
+import test_worker, test_rules, test_files, test_http
 import test_find, test_tag, test_register
 
 import unittest
@@ -33,9 +33,10 @@ def all_tests():
     suite.addTest(test_worker.all_tests())
     suite.addTest(test_find.all_tests())
     suite.addTest(test_tag.all_tests())
-    suite.addTest(test_register.all_tests())
     suite.addTest(test_rules.all_tests())
     suite.addTest(test_files.all_tests())
+    suite.addTest(test_http.all_tests())
+    suite.addTest(test_register.all_tests())
     # New test suites should be added here...
     return suite
 
