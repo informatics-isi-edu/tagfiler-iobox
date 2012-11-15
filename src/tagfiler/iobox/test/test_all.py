@@ -17,8 +17,8 @@
 All unit tests coverage.
 """
 
-import test_dao, test_http, test_worker
-import test_find, test_tag, test_register, test_outbox
+import test_worker, test_rules, test_files
+import test_find, test_tag, test_register
 
 import unittest
 import logging
@@ -31,12 +31,11 @@ def all_tests():
     """Returns a test suite containing all test suites for all modules."""
     suite = unittest.TestSuite()
     suite.addTest(test_worker.all_tests())
-    suite.addTest(test_http.all_tests())
-    suite.addTest(test_dao.all_tests())
     suite.addTest(test_find.all_tests())
     suite.addTest(test_tag.all_tests())
     suite.addTest(test_register.all_tests())
-    suite.addTest(test_outbox.all_tests())
+    suite.addTest(test_rules.all_tests())
+    suite.addTest(test_files.all_tests())
     # New test suites should be added here...
     return suite
 

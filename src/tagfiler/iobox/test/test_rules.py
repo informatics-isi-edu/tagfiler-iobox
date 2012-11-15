@@ -22,6 +22,7 @@ import socket
 import unittest
 import logging
 
+
 def all_tests():
     """Returns a TestSuite that includes all test cases in this module."""
     suite = unittest.TestSuite()
@@ -32,7 +33,7 @@ def all_tests():
 
 class TestPathRuleProcessor(unittest.TestCase):
     
-    def testRun(self):
+    def runTest(self):
         path_rule = create_date_and_study_path_rule()
         processor = PathRuleProcessor(path_rule)
         result = processor.analyze("/opt/data/studies/2012-02-23/session1/myfile.jpg")
@@ -43,9 +44,11 @@ class TestPathRuleProcessor(unittest.TestCase):
         processor = PathRuleProcessor(path_rule)
         result = processor.analyze("/opt/data/studies/2012-02-23/session1/myfile.jpg")
         assert result.get('name').pop() == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % socket.getfqdn()
-        
+
+
 class TestTagDirector(unittest.TestCase):
-    def testRun(self):
+    
+    def runTest(self):
         f = File()
         f.filename = "/opt/data/studies/2012-02-23/session1/myfile.jpg"
         
@@ -61,6 +64,7 @@ class TestTagDirector(unittest.TestCase):
                 assert t.value == "file://%s/opt/data/studies/2012-02-23/session1/myfile.jpg" % socket.gethostname()
             else:
                 assert False
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
