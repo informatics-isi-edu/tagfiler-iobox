@@ -17,7 +17,7 @@
 Unit tests for find module.
 """
 
-from tagfiler.iobox import worker, find, models
+from tagfiler.iobox import worker, find
 import base
 
 import unittest
