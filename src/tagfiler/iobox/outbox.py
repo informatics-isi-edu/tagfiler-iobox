@@ -50,6 +50,7 @@ class Outbox():
         self._done = False
         self._cv_done = threading.Condition()
         self._lock_terminate = threading.Lock()
+        self.errors = []
         
         self._find_q = worker.WorkQueue()
         self._sum_q = worker.WorkQueue()
@@ -159,6 +160,7 @@ class Outbox():
         logger.debug("_dispatcher_done")
         self._cv_done.acquire()
         self._done = True
+        self.errors = self._dispatcher.errors
         self._cv_done.notify_all()
         self._cv_done.release()
         
@@ -168,5 +170,6 @@ class Outbox():
         If 'timeout' is None, this call will block until the Outbox is done.
         """
         self._cv_done.acquire()
-        self._cv_done.wait(timeout)
+        if not self._done:
+            self._cv_done.wait(timeout)
         self._cv_done.release()

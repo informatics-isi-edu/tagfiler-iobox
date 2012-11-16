@@ -215,6 +215,15 @@ def main(args=None):
     outbox_manager.done()
     outbox_manager.wait_done()
     outbox_manager.terminate()
+    
+    # Print errors to stderr
+    if not args.quiet:
+        import sys
+        errors = outbox_manager.errors
+        for error in errors:
+            print >> sys.stderr, error
+    
+    # Wait for outbox to terminate
     while not outbox_manager.is_alive():
         time.sleep(1) # TODO: Maybe should implement another callback in outbox...
     

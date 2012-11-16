@@ -59,6 +59,7 @@ class Dispatcher(Worker):
         self._sumq = sumq
         self._tagq = tagq
         self._regq = registerq
+        self.errors = []
         
     def on_start(self):
         """Initializes the Outbox state persistence object."""
@@ -71,6 +72,13 @@ class Dispatcher(Worker):
     def do_work(self, task, work_done):
         logger.debug("do_work: %s" % task)
         
+        #
+        # Process exceptions
+        #
+        if isinstance(task, Exception):
+            self.errors.append(task)
+            return
+            
         #
         # Process control flow flags
         #

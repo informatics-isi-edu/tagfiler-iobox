@@ -39,10 +39,14 @@ class Tag(worker.Worker):
 
     def do_work(self, task, work_done):
         logger.debug('Tag:do_work: %s' % task)
+        
         if task is outbox.Outbox._TAG_DONE:
             work_done(outbox.Outbox._REG_DONE)
             return
         
-        assert isinstance(task, models.File)
-        self._tag_director.tag_registered_file(self._rules, task)
-        work_done(task)
+        try:
+            assert isinstance(task, models.File)
+            self._tag_director.tag_registered_file(self._rules, task)
+            work_done(task)
+        except Exception as e:
+            work_done(e)

@@ -33,14 +33,18 @@ class Checksum(Worker):
 
     def do_work(self, task, work_done):
         logger.debug('Checksum:do_work: %s' % task)
+        
         if task is outbox.Outbox._SUM_DONE:
             work_done(task)
             return
         
-        assert isinstance(task, File)
-        checksum = files.sha256sum(task.filename) #TODO: this needs to be interuptable
-        if task.status == File.COMPUTE:
-            task.checksum = checksum
-        else:
-            task.compare = checksum
-        work_done(task)
+        try:
+            assert isinstance(task, File)
+            checksum = files.sha256sum(task.filename) #TODO: this needs to be interuptable
+            if task.status == File.COMPUTE:
+                task.checksum = checksum
+            else:
+                task.compare = checksum
+            work_done(task)
+        except Exception as e:
+            work_done(e)

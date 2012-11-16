@@ -51,9 +51,12 @@ class Find(worker.Worker):
         
     def do_work(self, task, work_done):
         logger.debug('Find:do_work: %s' % task)
+        
         if task is outbox.Outbox._FIND_DONE:
             work_done(task)
-        else:
+            return
+        
+        try:
             path = task
             for (rfpath, size, mtime, user, group) in \
                     tree_scan_stats(path, self._excludes, self._includes):
@@ -64,3 +67,5 @@ class Find(worker.Worker):
                         'username': user, 'groupname': group}
                 f = File(**args)
                 work_done(f)
+        except Exception as e:
+            work_done(e)

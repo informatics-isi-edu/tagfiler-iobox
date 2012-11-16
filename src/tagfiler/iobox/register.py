@@ -45,20 +45,25 @@ class Register(Worker):
         logger.debug("Register:_flush_pending")
         tasks = self._pending
         self._pending = []
-        self._client.add_subjects(tasks)
-        for task in tasks:
-            task.rtime = time.time()
-            work_done(task)
+        try:
+            self._client.add_subjects(tasks)
+            for task in tasks:
+                task.rtime = time.time()
+                work_done(task)
+        except Exception as e:
+            work_done(e)
         
 
     def do_work(self, task, work_done):
         logger.debug('Register:do_work: %s' % task)
+        
         if task is outbox.Outbox._REG_DONE:
             if len(self._pending) > 0:
                 self._flush_pending(work_done)
             work_done(task)
-        else:
-            assert isinstance(task, File)
-            self._pending.append(task)
-            if len(self._pending) >= self._bulk_ops_max:
-                self._flush_pending(work_done)
+            return
+    
+        assert isinstance(task, File)
+        self._pending.append(task)
+        if len(self._pending) >= self._bulk_ops_max:
+            self._flush_pending(work_done)
