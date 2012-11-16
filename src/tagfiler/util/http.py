@@ -19,8 +19,8 @@ Tagfiler client.
 
 from tagfiler.iobox.models import File
 
-from httplib import HTTPConnection, HTTPSConnection, HTTPException
-from httplib import OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER, NOT_FOUND
+from httplib import HTTPConnection, HTTPSConnection
+from httplib import OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER
 import urlparse
 import urllib
 import logging
@@ -37,8 +37,9 @@ except:
 logger = logging.getLogger(__name__)
 
 
-class BaseError(Exception):
+class TagfilerException(Exception):
     def __init__(self, value, cause=None):
+        super(TagfilerException, self).__init__(value)
         self.value = value
         self.cause = cause
         
@@ -49,31 +50,46 @@ class BaseError(Exception):
         return message
 
 
-class AddressError(BaseError):
-    """AddressError indicates a failure to resolve the network address of the 
-    Tagfiler service.
+class UnresolvedAddress(TagfilerException):
+    """UnresolvedAddress indicates a failure to resolve the network address of
+    the Tagfiler service.
     
     This error is raised when a low-level socket.gaierror is caught.
     """
     def __init__(self, cause=None):
-        super(AddressError, self).__init__("Could not resolve hostname", cause)
+        super(UnresolvedAddress, self).__init__("Could not resolve address of host", cause)
 
-class NetworkError(BaseError):
-    """IOError wraps a socket.error exception.
+class NetworkError(TagfilerException):
+    """NetworkError wraps a socket.error exception.
     
     This error is raised when a low-level socket.error is caught.
     """
     def __init__(self, cause=None):
         super(NetworkError, self).__init__("Network I/O failure", cause)
 
-class NotFoundError(BaseError):
+class ProtocolError(TagfilerException):
+    """ProtocolError indicates a protocol-level failure.
+    
+    In other words, you may have tried to add a tag for which no tagdef exists.
+    """
+    def __init__(self, message='Network protocol failure', errorno=-1, response=None, cause=None):
+        super(ProtocolError, self).__init__("Tagfiler protocol failure", cause)
+        self._errorno = errorno
+        self._response = response
+        
+    def __str__(self):
+        message = "%s." % self.value
+        if self._errorno >= 0:
+            message += " HTTP ERROR %d: %s" % (self._errorno, self._response)
+        return message
+    
+class NotFoundError(TagfilerException):
     """Raised for HTTP NOT_FOUND (i.e., ERROR 404) responses."""
     pass
 
 
 class TagfilerClient(object):
-    """Web service client used to interact with the Tagfiler REST service.
-    """
+    """Web service client used to interact with the Tagfiler REST service."""
 
     def __init__(self, url, username, password=None):
         """Initializes the Tagfiler client object.
@@ -107,7 +123,7 @@ class TagfilerClient(object):
     def login(self):
         """Login to the Tagfiler service.
         
-        Raises 'AddressError' if unable to resolve the hostname.
+        Raises 'UnresolvedAddress' if unable to resolve the hostname.
         
         Raises 'NotFoundError' if the Tagfiler login resource is not found.
         """
@@ -120,10 +136,8 @@ class TagfilerClient(object):
                                       (self.username, self.password), headers)
             self.cookie = resp.getheader("set-cookie")
         except socket.gaierror as e:
-            raise AddressError(e)
-        except socket.error as e:
-            raise NetworkError(e)
-        except NotFoundError as e:
+            raise UnresolvedAddress(e)
+        except ProtocolError as e:
             raise
 
 
@@ -145,15 +159,13 @@ class TagfilerClient(object):
 
 
     def _send_request(self, method, url, body='', headers={}):
-        self.connection.request(method, url, body, headers)
-        resp = self.connection.getresponse()
-        if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
-            if resp.status == NOT_FOUND:
-                raise NotFoundError("Resource not found at specified URL",
-                                    "[HTTP Error %d] Not Found" % resp.status)
-            else:
-                raise HTTPException("Error response (%i) received: %s" % 
-                                    (resp.status, resp.read()))
+        try:
+            self.connection.request(method, url, body, headers)
+            resp = self.connection.getresponse()
+            if resp.status not in [OK, CREATED, ACCEPTED, NO_CONTENT, SEE_OTHER]:
+                raise ProtocolError(errorno=resp.status, response=resp.read())
+        except socket.error as e:
+            raise NetworkError(e)
         return resp
 
 
@@ -182,9 +194,7 @@ class TagfilerClient(object):
             parsed_table.append(parsed_dict)
         payload = json.dumps(parsed_table)
         bulkurl = '%s/subject/name(%s)' % (self.baseuri, ';'.join([ self._safequote(tag) for tag in tag_names ]))
-        headers = {}
-        headers["Content-Type"] = "application/json"
-        headers["Cookie"] = self.cookie
+        headers = {"Content-Type": "application/json", "Cookie": self.cookie}
         self._send_request("PUT", bulkurl, payload, headers)
 
 
@@ -207,8 +217,7 @@ class TagfilerClient(object):
                 tag_pairs.append("%s=%s" % (self._safequote(tag.name), self._safequote(tag.value)))
         url = "%s/subject/name=%s?%s" % (self.baseuri, 
                     self._safequote(fileobj.filter_tags("name")[0].value), "&".join(tag_pairs))
-        headers = {}
-        headers["Cookie"] = self.cookie
+        headers = {"Cookie": self.cookie}
         self._send_request("PUT", url, headers=headers)
 
 
@@ -218,19 +227,10 @@ class TagfilerClient(object):
         Keyword arguments:
         name -- name to query
         """
-        subject = None
         url = "%s/tags/name=%s" % (self.baseuri, self._safequote(name))
-        
-        headers = {}
-        headers["Cookie"] = self.cookie
-        headers["Accept"] = "application/json"
-        try:
-            resp = self._send_request("GET", url, headers=headers)
-            subject = json.loads(resp.read())
-        except HTTPException,e:
-            logger.error(e)
-        except NotFoundError,e:
-            logger.error(e)
+        headers = {"Cookie": self.cookie, "Accept": "application/json"}
+        resp = self._send_request("GET", url, headers=headers)
+        subject = json.loads(resp.read())
         return subject
 
 

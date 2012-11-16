@@ -20,7 +20,7 @@ Command-line interface for the Tagfiler Outbox.
 import outbox
 import version
 from models import RERule, Outbox, create_default_name_path_rule
-from tagfiler.util.http import TagfilerClient, AddressError, NetworkError, NotFoundError
+from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError
 
 import os
 import logging
@@ -199,13 +199,13 @@ def main(args=None):
     try:
         client.connect()
         client.login()
-    except AddressError as err:
+    except UnresolvedAddress as err:
         logger.error(err)
         return __EXIT_FAILURE
     except NetworkError as err:
         logger.error(err)
         return __EXIT_FAILURE
-    except NotFoundError as err:
+    except ProtocolError as err:
         logger.error(err)
         return __EXIT_FAILURE
     
