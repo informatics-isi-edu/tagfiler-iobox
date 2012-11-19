@@ -45,9 +45,11 @@ The following is a sample configuration file.
     "roots": [
         "/tmp/fubar"
     ],
-    "includes": [
+    "excludes": [ 
+        ".*"
     ],
-    "excludes": [
+    "includes": [
+        "foo", "bar"
     ],
     "rules": [
         {
