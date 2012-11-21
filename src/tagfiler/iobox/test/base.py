@@ -19,6 +19,7 @@ Shared utilities for Outbox TestCases.
 
 from tagfiler.iobox.models import Outbox, RERule
 from tagfiler.util.http import TagfilerClient
+from tagfiler.iobox.test import settings
 
 import unittest
 import logging
@@ -28,14 +29,13 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-test_endpoint_name = "smithd#tagfiler_ep"
 
 def create_test_outbox():
     outbox = Outbox()
     outbox.name = 'test_outbox'
-    outbox.url = 'https://pooka.isi.edu/tagfiler'
-    outbox.username = 'demo'
-    outbox.password = 'demo'
+    outbox.url = settings.TEST_URL
+    outbox.username = settings.TEST_USERNAME
+    outbox.password = settings.TEST_PASSWORD
     return outbox
 
 def create_test_client(outbox_model):
