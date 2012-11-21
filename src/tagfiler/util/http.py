@@ -49,6 +49,11 @@ class TagfilerException(Exception):
             message += " Caused by: %s." % self.cause
         return message
 
+class MalformedURL(TagfilerException):
+    """MalformedURL indicates a malformed URL.
+    """
+    def __init__(self, cause=None):
+        super(MalformedURL, self).__init__("URL was malformed", cause)
 
 class UnresolvedAddress(TagfilerException):
     """UnresolvedAddress indicates a failure to resolve the network address of
@@ -112,6 +117,15 @@ class TagfilerClient(object):
             self.connection_class = HTTPConnection
         self.connection = None
         self.cookie = None
+        
+        if not self.host or not len(self.host):
+            raise MalformedURL(cause='Hostname cannot be None')
+        
+        if self.port and len(self.port):
+            try:
+                self.port = int(self.port)
+            except Exception:
+                raise MalformedURL(cause='Invalid port number (%s)' % self.port)
 
 
     def connect(self):

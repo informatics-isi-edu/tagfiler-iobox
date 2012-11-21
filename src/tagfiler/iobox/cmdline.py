@@ -20,7 +20,7 @@ Command-line interface for the Tagfiler Outbox.
 import outbox
 import version
 from models import RERule, Outbox, create_default_name_path_rule
-from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError
+from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError, MalformedURL
 
 import os
 import logging
@@ -201,11 +201,14 @@ def main(args=None):
         outbox_model.path_rules.append(RERule(**rule))
 
     # Establish Tagfiler client connection
-    client = TagfilerClient(outbox_model.url, outbox_model.username, 
-                            outbox_model.password)
     try:
+        client = TagfilerClient(outbox_model.url, outbox_model.username, 
+                                outbox_model.password)
         client.connect()
         client.login()
+    except MalformedURL as err:
+        logger.error(err)
+        return __EXIT_FAILURE
     except UnresolvedAddress as err:
         logger.error(err)
         return __EXIT_FAILURE
