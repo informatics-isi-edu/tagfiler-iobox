@@ -28,7 +28,6 @@ import argparse
 import json
 import time
 import socket
-import getpass
 import re
 
 
@@ -66,27 +65,30 @@ def main(args=None):
 
     # General options
     parser.add_argument('--version', action='version', version=__VER)
-    parser.add_argument('-n', '--name', type=str, default='default',
-                        help='name of the outbox configuration')
+    
+    # Outbox name
+    helpstr=('name of the outbox configuration (default: %s)' % 
+             __DEFAULT_OUTBOX_NAME)
+    parser.add_argument('-n', '--name', type=str, help=helpstr)
+    
     # Use home directory as default location for outbox.conf
-    default_config_path = os.path.join(os.path.expanduser('~'), 
-                                       '.tagfiler', 'outbox.conf')
+    default_config_filename = os.path.join(
+            os.path.expanduser('~'), '.tagfiler', 'outbox.conf')
     parser.add_argument('-f', '--filename', type=str, 
-                        default=default_config_path,
                         help=('configuration filename (default: %s)' % 
-                              default_config_path))
+                              default_config_filename))
+    
     # Use home directory as default location for state.db
     default_state_db = os.path.join(os.path.expanduser('~'), 
                                     '.tagfiler', 'state.db')
     parser.add_argument('-s', '--state_db', type=str, 
-                        default=default_state_db,
                         help=('local state database (default: %s)' % 
                               default_state_db))
+    
     # Use username#hostname as default endpoint
-    default_endpoint = "%s#%s" % (getpass.getuser(), socket.gethostname())
+    default_endpoint = "gsiftp://%s" % socket.gethostname()
     parser.add_argument('-e', '--endpoint', type=str,
-                        default=default_endpoint,
-                        help=('endpoint name (default: %s)' % 
+                        help=('endpoint (default: %s)' % 
                               default_endpoint))
     
     # Verbose | Quite option group
@@ -97,30 +99,29 @@ def main(args=None):
     group.add_argument('-q', '--quiet', action='store_true', 
                        help='suppress output')
     
-    # Inclusion/Exclusion option group
-    group = parser.add_argument_group(title='File filters')
-    group.add_argument('--include', type=str, nargs='+',
-                       help='inclusion pattern (regular expression)')
+    # Directory and Inclusion/Exclusion option group
+    group = parser.add_argument_group(title='Directory traversal options')
+    group.add_argument('--root', metavar='DIRECTORY', 
+                       type=str, nargs='+',
+                       help='root directories to be traversed recursively')
     group.add_argument('--exclude', type=str, nargs='+',
-                       help='exclusion pattern (regular expression)')
+                       help='exclude based on regular expression')
+    group.add_argument('--include', type=str, nargs='+',
+                       help='include based on regular expression')
     
     # Tagfiler option group
     group = parser.add_argument_group(title='Tagfiler options')
     group.add_argument('--url', dest='url', metavar='URL', 
-                       type=str, help='URL used to connect to Tagfiler')
+                       type=str, help='URL of the Tagfiler service')
     group.add_argument('--username', dest='username', metavar='USERNAME', 
-                       type=str, help='username used when connecting to Tagfiler')
+                       type=str, help='username for your Tagfiler user account')
     group.add_argument('--password', dest='password', metavar='PASSWORD', 
-                       type=str, help='password used when connecting to Tagfiler')
+                       type=str, help='password for your Tagfiler user account')
     group.add_argument('--bulk_ops_max', type=int, 
-                        help='maximum bulk operations per Tagfiler call' + \
+                        help='maximum bulk operations per call to Tagfiler' + \
                         ' (default: %d)' % __BULK_OPS_MAX)
     
-    # Roots option group
-    group = parser.add_argument_group(title='Root directory options')
-    group.add_argument('--root', metavar='DIRECTORY', 
-                       type=str, nargs='+',
-                       help='add root directories to the base configuration')
+    # Now parse them
     args = parser.parse_args(args)
     
     # Turn verbosity into a loglevel setting for the global logger
@@ -133,9 +134,10 @@ def main(args=None):
         logger.debug("args: %s" % args)
     
     # Load configuration file, or create configuration based on arguments
+    filename = args.filename or default_config_filename
     cfg = {}
-    if os.path.exists(args.filename):
-        f = open(args.filename, 'r')
+    if os.path.exists(filename):
+        f = open(filename, 'r')
         try:
             cfg = json.load(f)
             logger.debug("config: %s" % cfg)
@@ -166,27 +168,28 @@ def main(args=None):
         
     outbox_model.bulk_ops_max = args.bulk_ops_max or \
                                 cfg.get('bulk_ops_max', __BULK_OPS_MAX)
+                                
+    # Endpoint setting
     outbox_model.endpoint = args.endpoint or \
                                 cfg.get('endpoint', default_endpoint)
-                                
-    print args.endpoint
-    print outbox_model.endpoint
 
     # Roots
     roots = args.root or cfg.get('roots')
+    if not roots or not len(roots):
+        parser.error('At least one root directory must be given.')
     for root in roots:
         outbox_model.roots.append(root)
-    if not len(roots):
-        parser.error('Must specify at least one root directory.')
     
     # Add include/exclusion patterns
     excludes = args.exclude or cfg.get('excludes')
-    for exclude in excludes:
-        outbox_model.excludes.append(re.compile(exclude))
+    if excludes and len(excludes):
+        for exclude in excludes:
+            outbox_model.excludes.append(re.compile(exclude))
     
     includes = args.include or cfg.get('includes')
-    for include in includes:
-        outbox_model.includes.append(re.compile(include))
+    if includes and len(includes):
+        for include in includes:
+            outbox_model.includes.append(re.compile(include))
     
     # Add the default 'name' tag path rule
     name_rule = create_default_name_path_rule(outbox_model.endpoint)

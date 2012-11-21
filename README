@@ -42,7 +42,7 @@ The following is a sample configuration file.
     "url": "https://pooka.isi.edu/tagfiler",
     "username": "demo",
     "password": "demo",
-    "endpoint": "demo@demohost",
+    "endpoint": "demo#demohost",
     "bulk_ops_max": 1000,
     "roots": [
         "/tmp/fubar"
@@ -76,3 +76,18 @@ Use the following command to run the Tagfiler Outbox:
 
 For help on command line arguments, use:
   tagfiler-outbox --help
+
+Limitations
+~~~~~~~~~~~
+
+Some command-line arguments have not been thoroughly tested. When in doubt, 
+use the configuration file settings over the command-line arguments.
+
+Error messages are returned from the Tagfiler service and the Outbox passes 
+them through to the console output or logger. The Outbox does not attempt to
+interpret most errors. The error messages are as good as the service currently 
+provides.
+
+The Outbox has been most thoroughly tested on Mac OS X 10.7.5 and lightly 
+tested on Windows 7 and variations of Linux.
+ 
