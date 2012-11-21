@@ -34,8 +34,8 @@ To install from a source distribution:
 Configuration
 ~~~~~~~~~~~~~
 
-By default, Tagfile Outbox will look for a configuration file in:
-  ${HOME}/.tagfiler/outbox.json
+By default, Tagfile Outbox will look for a configuration file at:
+  ${HOME}/.tagfiler/outbox.conf
 
 The following is a sample minimal configuration file.
 
