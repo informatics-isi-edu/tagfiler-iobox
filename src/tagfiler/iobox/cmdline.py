@@ -28,6 +28,7 @@ import argparse
 import json
 import time
 import socket
+import getpass
 import re
 
 
@@ -81,12 +82,12 @@ def main(args=None):
                         default=default_state_db,
                         help=('local state database (default: %s)' % 
                               default_state_db))
-    # Use hostname as default endpoint_name
-    default_endpoint_name = socket.gethostname()
-    parser.add_argument('-e', '--endpoint_name', type=str,
-                        default=default_endpoint_name,
+    # Use username#hostname as default endpoint
+    default_endpoint = "%s#%s" % (getpass.getuser(), socket.gethostname())
+    parser.add_argument('-e', '--endpoint', type=str,
+                        default=default_endpoint,
                         help=('endpoint name (default: %s)' % 
-                              default_endpoint_name))
+                              default_endpoint))
     
     # Verbose | Quite option group
     group = parser.add_mutually_exclusive_group()
@@ -165,8 +166,11 @@ def main(args=None):
         
     outbox_model.bulk_ops_max = args.bulk_ops_max or \
                                 cfg.get('bulk_ops_max', __BULK_OPS_MAX)
-    outbox_model.endpoint_name = args.endpoint_name or \
-                                cfg.get('endpoint_name', default_endpoint_name)
+    outbox_model.endpoint = args.endpoint or \
+                                cfg.get('endpoint', default_endpoint)
+                                
+    print args.endpoint
+    print outbox_model.endpoint
 
     # Roots
     roots = args.root or cfg.get('roots')
@@ -185,7 +189,7 @@ def main(args=None):
         outbox_model.includes.append(re.compile(include))
     
     # Add the default 'name' tag path rule
-    name_rule = create_default_name_path_rule(outbox_model.endpoint_name)
+    name_rule = create_default_name_path_rule(outbox_model.endpoint)
     outbox_model.path_rules.append(name_rule)
     
     # Add optional path rules

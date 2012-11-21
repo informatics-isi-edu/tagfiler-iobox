@@ -125,11 +125,11 @@ class Tag(object):
         return s
 
 
-def create_default_name_path_rule(endpoint_name):
+def create_default_name_path_rule(endpoint):
     """Creates the path rule for the required 'name' tag."""
     path_rule = RERule()
     path_rule.pattern = '^(?P<path>.*)'
     path_rule.extract = 'template'
-    path_rule.templates.append('file://%s\g<path>' % endpoint_name)
+    path_rule.templates.append('%s\g<path>' % endpoint)
     path_rule.tags.append('name')
     return path_rule

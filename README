@@ -6,8 +6,9 @@ contents and metadata as tags in a Tagfiler service.
 System Requirements
 ~~~~~~~~~~~~~~~~~~~
 Tagfiler Outbox is a python based utility. You must have a Python interpreter 
-installed on your system. Python version 2.6+ is required. We have tested on 
-Mac OS X 10.7, CentOS 5, and Fedora Core 11.
+installed on your system. Python version 2.6+ is required. No additional 
+packages should be necessary. We have tested on Mac OS X 10.7, CentOS 5, and 
+Fedora Core 11.
 
 Installation
 ~~~~~~~~~~~~
@@ -38,9 +39,10 @@ The following is a sample configuration file.
 {
     "name": "Outbox",
     "state_db": "/Users/demo/.tagfiler/state.db",
-    "url": "https://curiosity.isi.edu/tagfiler",
+    "url": "https://pooka.isi.edu/tagfiler",
     "username": "demo",
     "password": "demo",
+    "endpoint": "demo@demohost",
     "bulk_ops_max": 1000,
     "roots": [
         "/tmp/fubar"
