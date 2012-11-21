@@ -131,7 +131,7 @@ class TagfilerClient(object):
         headers = {}
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         try:
-            resp = self._send_request("POST", "/webauthn/login", 
+            resp = self._send_request("POST", "/tagfiler/session", 
                                       "username=%s&password=%s" % \
                                       (self.username, self.password), headers)
             self.cookie = resp.getheader("set-cookie")

@@ -33,7 +33,7 @@ test_endpoint_name = "smithd#tagfiler_ep"
 def create_test_outbox():
     outbox = Outbox()
     outbox.name = 'test_outbox'
-    outbox.url = 'https://curiosity.isi.edu/tagfiler'
+    outbox.url = 'https://pooka.isi.edu/tagfiler'
     outbox.username = 'demo'
     outbox.password = 'demo'
     return outbox
