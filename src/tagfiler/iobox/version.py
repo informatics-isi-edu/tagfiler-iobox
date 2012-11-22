@@ -19,4 +19,4 @@ Versioning information for the Tagfiler IOBox Package.
 
 VERSION_MAJOR   = 0
 VERSION_MINOR   = 1
-VERSION_STRING  = "%(prog)s 0.1 beta"
+VERSION_STRING  = "%(prog)s $Revision$ beta"
