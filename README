@@ -141,5 +141,6 @@ work. They should be ignored.
 If you are registering 1000s of tags in a Tagfiler service, it is strongly 
 recommended that you install Tagfiler using a Postgres 9.2 database management 
 system. Our tests against Postgres 8.x backed Tagfiler services indicate 
-significant slowdown after the first several tags have been registered.
+significant slowdown after the first several thousand tags have been 
+registered.
 
