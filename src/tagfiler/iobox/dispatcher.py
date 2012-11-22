@@ -60,6 +60,9 @@ class Dispatcher(Worker):
         self._tagq = tagq
         self._regq = registerq
         self.errors = []
+        self.found = 0
+        self.registered = 0
+        self.skipped = 0
         
     def on_start(self):
         """Initializes the Outbox state persistence object."""
@@ -101,6 +104,7 @@ class Dispatcher(Worker):
         #
         if task.status is None:
             # Case: we are in the FIND stage
+            self.found += 1
             exists = self._state.find_file(task.filename)
             if exists: task.id = exists.id
                 
@@ -131,6 +135,7 @@ class Dispatcher(Worker):
             else:
                 # Case: File does not meet any criteria for processing
                 logger.debug("Skipping: %s" % task.filename)
+                self.skipped += 1
         
         elif task.status == File.COMPUTE:
             # Case: we are in the post Checksum COMPUTE stage
@@ -154,10 +159,12 @@ class Dispatcher(Worker):
             else:
                 # Case: File checksum matches, update mtime only
                 logger.debug("Unchanged: %s" % task.filename)
+                self.skipped += 1
                 # Update its mtime so that it won't be cksummed next time
                 self._state.update_file(task)
             
         elif task.status == File.REGISTER:
             # Case: we are in the post REGISTER stage
             logger.debug("Update file: %s" % task.filename)
+            self.registered += 1
             self._state.update_file(task)

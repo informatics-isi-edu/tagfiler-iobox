@@ -51,6 +51,9 @@ class Outbox():
         self._cv_done = threading.Condition()
         self._lock_terminate = threading.Lock()
         self.errors = []
+        self.found = 0
+        self.skipped = 0
+        self.registered = 0
         
         self._find_q = worker.WorkQueue()
         self._sum_q = worker.WorkQueue()
@@ -161,6 +164,9 @@ class Outbox():
         self._cv_done.acquire()
         self._done = True
         self.errors = self._dispatcher.errors
+        self.found = self._dispatcher.found
+        self.skipped = self._dispatcher.skipped
+        self.registered = self._dispatcher.registered
         self._cv_done.notify_all()
         self._cv_done.release()
         

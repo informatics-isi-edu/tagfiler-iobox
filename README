@@ -129,8 +129,8 @@ use the configuration file settings over the command-line arguments.
 
 Error messages are returned from the Tagfiler service and the Outbox passes 
 them through to the console output or logger. The Outbox does not attempt to
-interpret most errors. The error messages are as good as the service currently 
-provides.
+interpret most errors. The error messages are only as informative as the 
+Tagfiler service provides.
 
 The Outbox has been most thoroughly tested on Mac OS X 10.7.5 and lightly 
 tested on Windows 7 and variations of Linux.
@@ -144,3 +144,5 @@ system. Our tests against Postgres 8.x backed Tagfiler services indicate
 significant slowdown after the first several thousand tags have been 
 registered.
 
+The largest collection of files used in testing numbered around 50,000. File 
+sizes ranged from a few hundred bytes to a few gigabytes per file.

@@ -23,6 +23,7 @@ from models import RERule, Outbox, create_default_name_path_rule
 from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError, MalformedURL
 
 import os
+import sys
 import logging
 import argparse
 import json
@@ -142,7 +143,7 @@ def main(args=None):
             cfg = json.load(f)
             logger.debug("config: %s" % cfg)
         except ValueError as e:
-            logger.error('Malformed configuration file: %s', e)
+            print >> sys.stderr, ('ERROR: Malformed configuration file: %s' % e)
             return __EXIT_FAILURE
         else:
             f.close()
@@ -207,16 +208,16 @@ def main(args=None):
         client.connect()
         client.login()
     except MalformedURL as err:
-        logger.error(err)
+        print >> sys.stderr, ('ERROR: %s' % err)
         return __EXIT_FAILURE
     except UnresolvedAddress as err:
-        logger.error(err)
+        print >> sys.stderr, ('ERROR: %s' % err)
         return __EXIT_FAILURE
     except NetworkError as err:
-        logger.error(err)
+        print >> sys.stderr, ('ERROR: %s' % err)
         return __EXIT_FAILURE
     except ProtocolError as err:
-        logger.error(err)
+        print >> sys.stderr, ('ERROR: %s' % err)
         return __EXIT_FAILURE
     
     # Now, create the outbox manager and let it run to completion
@@ -226,12 +227,19 @@ def main(args=None):
     outbox_manager.wait_done()
     outbox_manager.terminate()
     
-    # Print errors to stderr
+    # Print final message unless '--quiet'
     if not args.quiet:
-        import sys
+        # Print concluding message to stdout
+        print "Done. Found=%s Skipped=%s Registered=%s (Errors=%s)" % \
+            (outbox_manager.found, outbox_manager.skipped, 
+             outbox_manager.registered, len(outbox_manager.errors))
+            
+        # Print errors to stderr
         errors = outbox_manager.errors
-        for error in errors:
-            print >> sys.stderr, error
+        if len(errors):
+            print >> sys.stderr, "The following errors were encountered:"
+            for error in errors:
+                print >> sys.stderr, error
     
     # Wait for outbox to terminate
     while not outbox_manager.is_alive():
@@ -239,6 +247,6 @@ def main(args=None):
     
     try:
         client.close()
-    except NetworkError as e:
-        logger.warn(e)
+    except NetworkError as err:
+        print >> sys.stderr, ('WARN: %s' % err)
     return __EXIT_SUCCESS
