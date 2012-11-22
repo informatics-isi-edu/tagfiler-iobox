@@ -169,7 +169,8 @@ def main(args=None):
         
     outbox_model.bulk_ops_max = args.bulk_ops_max or \
                                 cfg.get('bulk_ops_max', __BULK_OPS_MAX)
-                                
+    outbox_model.bulk_ops_max = int(outbox_model.bulk_ops_max)
+    
     # Endpoint setting
     outbox_model.endpoint = args.endpoint or \
                                 cfg.get('endpoint', default_endpoint)
