@@ -26,6 +26,19 @@ import models
 logger = logging.getLogger(__name__)
 
 
+class DaoException(Exception):
+    def __init__(self, value, cause=None):
+        super(DaoException, self).__init__(value)
+        self.value = value
+        self.cause = cause
+        
+    def __str__(self):
+        message = "%s." % self.value
+        if self.cause:
+            message += " Caused by: %s." % self.cause
+        return message
+
+
 class DataDAO(object):
    
     def __init__(self, db_filename, sql_filename):
@@ -37,6 +50,9 @@ class DataDAO(object):
         
         The 'sql_filename' parameter is the filename of the SQL DDL script to 
         be used in order to create the corresponding database.
+        
+        May raise 'OperationalError' from sqlite3 module, for instance, if it 
+        fails to open the database file.
         """
         def _dict_factory(cursor, row):
             d = {}
@@ -48,32 +64,59 @@ class DataDAO(object):
         
         # Test for existence of the state db, before issuing the connect
         db_exists = os.path.exists(self.db_filename)
-        self.db = sqlite3.connect(self.db_filename, detect_types=sqlite3.PARSE_DECLTYPES)
+        if not db_exists:
+            # If db does not exist, create dirs if necessary
+            dirname = os.path.dirname(self.db_filename)
+            if not os.path.exists(dirname):
+                try:
+                    os.makedirs(dirname)
+                except os.error as err:
+                    msg = "Could not create dirs for %s" % dirname
+                    raise DaoException(msg, err)
+        
+        # Attempt to connect to database (ie, open the file!)
+        try:
+            self.db = sqlite3.connect(self.db_filename, detect_types=sqlite3.PARSE_DECLTYPES)
+        except sqlite3.OperationalError as err:
+            msg = "Failed to connect to database at %s" % self.db_filename
+            raise DaoException(msg, err)
+        
+        # Assign row factory
         self.db.row_factory = _dict_factory
         
         # If db didn't exist (prior to sqlite connect), create database schema
         if not db_exists:
             logger.info("Storing local state in %s." % self.db_filename)
             
-            import tagfiler.iobox
-            sql_source_dir = os.path.join(os.path.dirname(tagfiler.iobox.__file__), "sql/")
-            source_file = os.path.join(sql_source_dir, sql_filename)
-            
-            cursor = self.db.cursor()
-            f = open(source_file, "r")
-            sql_stmts = str.split(f.read(), ";")
-            for s in sql_stmts:
-                logger.debug("Executing statement %s" % s)
-                s.strip()
-                if len(s) > 0:
-                    cursor.execute(s)
-            f.close()
-            cursor.close()
-    
+            try:
+                import tagfiler.iobox
+                sql_source_dir = os.path.join(os.path.dirname(tagfiler.iobox.__file__), "sql/")
+                source_file = os.path.join(sql_source_dir, sql_filename)
+                
+                cursor = self.db.cursor()
+                f = open(source_file, "r")
+                sql_stmts = str.split(f.read(), ";")
+                for s in sql_stmts:
+                    logger.debug("Executing statement %s" % s)
+                    s.strip()
+                    if len(s) > 0:
+                        cursor.execute(s)
+                f.close()
+                cursor.close()
+            except sqlite3.OperationalError as err:
+                msg = "Unexpected error"
+                raise DaoException(msg, err)
+
+
     def close(self):
         if self.db is not None:
-            self.db.close()
-            self.db = None
+            try:
+                self.db.close()
+            except sqlite3.OperationalError as err:
+                msg = "Unexpected error"
+                raise DaoException(msg, err)
+            finally:
+                self.db = None
 
 
 class OutboxStateDAO(DataDAO):
