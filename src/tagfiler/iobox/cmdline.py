@@ -40,8 +40,8 @@ __EXIT_FAILURE = 1
 
 # Used by ArgumentParser
 __PROG = "tagfiler-outbox"
-__DESC = "Tagfiler Outbox command-line interface"
-__VER  = version.VERSION_STRING
+__DESC = "The Tagfiler Outbox command-line utility."
+__VER  = "%(prog)s " + ("%d.%d trunk" % (version.MAJOR, version.MINOR))
 __DEFAULT_OUTBOX_NAME = "outbox"
 __BULK_OPS_MAX = 1000
 
