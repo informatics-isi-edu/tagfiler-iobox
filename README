@@ -144,5 +144,9 @@ system. Our tests against Postgres 8.x backed Tagfiler services indicate
 significant slowdown after the first several thousand tags have been 
 registered.
 
-The largest collection of files used in testing numbered around 50,000. File 
+The largest directory of files used in testing numbered around 55,000. File 
 sizes ranged from a few hundred bytes to a few gigabytes per file.
+
+Errors encountered during the processing pipeline are recorded and printed to 
+stderr when the Outbox is finished. On large directories, there could be a 
+large number of errors reported. It is advisable to redirect stderr to a file.
