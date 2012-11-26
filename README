@@ -57,8 +57,8 @@ performed per call to the Tagfiler service. It excludes all files found under
 the root directory unless they match the inclusion patterns "foo" and "bar". In
  addition to the default 'name=...' tag, it also creates a tag named 'loopback'
  based on a 'template' rule, which means that after extracting text based on
-the 'pattern' it uses the parameterized text refered to as 'path' within the
-regular expression tempalate. It also creates two 'positional' tags based on 
+the 'pattern' it uses the parameterized text referred to as 'path' within the
+regular expression template. It also creates two 'positional' tags based on 
 positional text extracted using the regular expression. The first position is 
 assigned as the 'date' tag and the second position extracted is assigned as 
 the 'session' tag. Note that the 'date' tagdef is by default defined in a 
