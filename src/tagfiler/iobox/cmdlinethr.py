@@ -17,21 +17,20 @@
 Command-line interface for the Tagfiler Outbox.
 """
 
+import outbox
 import version
-from models import File, RERule, Outbox, create_default_name_path_rule
-from dao import OutboxStateDAO
-from tagfiler.util.rules import TagDirector
+from models import RERule, Outbox, create_default_name_path_rule
 from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError, MalformedURL
-from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path, sha256sum
 
 import os
 import sys
 import logging
 import argparse
 import json
+import time
 import socket
 import re
-import time
+
 
 logger = logging.getLogger(__name__)
 
@@ -222,79 +221,30 @@ def main(args=None):
         print >> sys.stderr, ('ERROR: %s' % err)
         return __EXIT_FAILURE
     
-    state = OutboxStateDAO(outbox_model.state_db)
-    worklist = []
-    found = 0
-    skipped = 0
-    tagged = 0
-    registered = 0
-
-    # walk the root trees, cksum as needed, create worklist to be registered
-    for root in outbox_model.roots:
-        for (rfpath, size, mtime, user, group) in \
-                tree_scan_stats(root, outbox_model.excludes, outbox_model.includes):
-            filename = create_uri_friendly_file_path(root, rfpath)
-            fargs = {'filename': filename, 'mtime': mtime, 'size': size, \
-                    'username': user, 'groupname': group}
-            f = File(**fargs)
-            found += 1
-            
-            # Check if file exists in local state db
-            exists = state.find_file(filename)
-            if not exists:
-                # Case: New file, not seen before
-                logger.debug("New: %s" % filename)
-                f.checksum = sha256sum(filename)
-                state.add_file(f)
-                worklist.append(f)
-            elif f.mtime > exists.mtime:
-                # Case: File has changed since last seen
-                logger.debug("Modified: %s" % filename)
-                f.checksum = sha256sum(filename)
-                if f.checksum != exists.checksum:
-                    f.id = exists.id
-                    state.update_file(f)
-                    worklist.append(f)
-                else:
-                    exists.mtime = f.mtime # update mod time
-                    state.update_file(f)
-                    skipped += 1
-            elif f.size and not exists.checksum:
-                # Case: Missing checksum, on regular file
-                logger.debug("Missing checksum: %s" % filename)
-                f.checksum = sha256sum(filename)
-                f.id = exists.id
-                state.update_file(f)
-                worklist.append(f)
-            elif not exists.rtime:
-                # Case: File has not been registered
-                logger.debug("Not registered: %s" % filename)
-                worklist.append(exists)
-            else:
-                # Case: File does not meet any criteria for processing
-                logger.debug("Skipping: %s" % filename)
-                skipped += 1
-    
-    # Tag files in worklist
-    tag_director = TagDirector()
-    for f in worklist:
-        logger.debug("Tagging: %s" % f.filename)
-        tag_director.tag_registered_file(outbox_model.path_rules, f)
-        tagged += 1
-        
-    # Register files in worklist
-    client.add_subjects(worklist)
-    for f in worklist:
-        logger.debug("Registered: %s" % f.filename)
-        f.rtime = time.time()
-        state.update_file(f)
-        registered += 1
+    # Now, create the outbox manager and let it run to completion
+    outbox_manager = outbox.Outbox(outbox_model, client)
+    outbox_manager.start()
+    outbox_manager.done()
+    outbox_manager.wait_done()
+    outbox_manager.terminate()
     
     # Print final message unless '--quiet'
     if not args.quiet:
         # Print concluding message to stdout
-        print "Done. Found=%s Skipped=%s Tagged=%s Registered=%s" % \
-                    (found, skipped, tagged, registered)
+        print "Done. Found=%s Skipped=%s Registered=%s (Errors=%s)" % \
+            (outbox_manager.found, outbox_manager.skipped, 
+             outbox_manager.registered, len(outbox_manager.errors))
+            
+        # Print errors to stderr
+        errors = outbox_manager.errors
+        if len(errors):
+            print >> sys.stderr, "The following errors were encountered:"
+            for error in errors:
+                print >> sys.stderr, error
+    
+    # Wait for outbox to terminate
+    while not outbox_manager.is_alive():
+        time.sleep(1) # TODO: Maybe should implement another callback in outbox...
     
     try:
         client.close()
