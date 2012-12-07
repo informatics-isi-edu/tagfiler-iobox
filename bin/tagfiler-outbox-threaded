@@ -20,7 +20,7 @@ Main script to invoke the Tagfiler Outbox.
 """
 
 import sys
-import tagfiler.iobox.cmdlinethr as cmdline
+from tagfiler.iobox.threaded import cmdlinethr
 
 if __name__ == "__main__":
-    sys.exit(cmdline.main())
+    sys.exit(cmdlinethr.main())

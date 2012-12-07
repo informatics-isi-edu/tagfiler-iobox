@@ -20,7 +20,7 @@ persistent checkpointing of the state of the pipeline. It then dispatches work
 to the next workers task queue.
 """
 
-from tagfiler.iobox.worker import Worker
+from worker import Worker
 from tagfiler.iobox.dao import OutboxStateDAO
 from tagfiler.iobox.models import File
 import outbox

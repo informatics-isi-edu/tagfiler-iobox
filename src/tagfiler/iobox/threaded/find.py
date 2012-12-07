@@ -21,7 +21,7 @@ stats for each file entrye. The 'Find' stage then fills a queue with File
 model objects.
 """
 
-import tagfiler.iobox.worker as worker
+import worker
 from tagfiler.util.files import tree_scan_stats, create_uri_friendly_file_path
 from tagfiler.iobox.models import File
 import outbox

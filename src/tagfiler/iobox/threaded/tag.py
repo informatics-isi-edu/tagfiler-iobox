@@ -18,7 +18,7 @@ Implements the tagging stage of the Outbox pipeline.
 """
 
 import worker
-import models
+from tagfiler.iobox import models
 from tagfiler.util import rules
 import outbox
 

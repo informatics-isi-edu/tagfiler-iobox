@@ -18,7 +18,7 @@ Implements the registration stage of the Outbox.
 """
 
 from worker import Worker
-from models import File
+from tagfiler.iobox.models import File
 import outbox
 
 import time

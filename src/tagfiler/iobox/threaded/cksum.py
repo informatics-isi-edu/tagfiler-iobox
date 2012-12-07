@@ -18,7 +18,7 @@ Implements the checksum stage of the Outbox.
 """
 
 from worker import Worker
-from models import File
+from tagfiler.iobox.models import File
 from tagfiler.util import files
 import outbox
 

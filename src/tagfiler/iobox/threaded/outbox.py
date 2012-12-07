@@ -17,7 +17,8 @@
 Outbox management.
 """
 
-import worker, find, cksum, tag, register, models, dispatcher
+import worker, find, cksum, tag, register, dispatcher
+from tagfiler.iobox import models
 from tagfiler.util import rules
 
 import logging

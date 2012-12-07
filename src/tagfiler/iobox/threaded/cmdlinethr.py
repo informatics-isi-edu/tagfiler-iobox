@@ -18,8 +18,8 @@ Command-line interface for the Tagfiler Outbox.
 """
 
 import outbox
-import version
-from models import RERule, Outbox, create_default_name_path_rule
+from tagfiler.iobox import version
+from tagfiler.iobox.models import RERule, Outbox, create_default_name_path_rule
 from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError, MalformedURL
 
 import os
