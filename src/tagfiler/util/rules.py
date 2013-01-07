@@ -31,8 +31,9 @@ class RERuleProcessor(object):
         """
         self._rerule = rerule
         self.prepattern_processor = None
+        self.prepattern = None
         if self._rerule.prepattern is not None:
-            self.prepattern_processor = RERuleProcessor(self.prepattern)
+            self.prepattern_processor = RERuleProcessor(self._rerule.prepattern)
         self.pattern = re.compile(rerule.pattern)
 
         self.apply_func = dict(match=self.apply_match,

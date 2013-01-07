@@ -278,14 +278,14 @@ def main(args=None):
     # Tag files in worklist
     tag_director = TagDirector()
     for f in worklist:
-        logger.debug("Tagging: %s" % f.filename)
+        logger.debug("Tagging: %s" % f)
         tag_director.tag_registered_file(outbox_model.path_rules, f)
         tagged += 1
         
     # Register files in worklist
     client.add_subjects(worklist)
     for f in worklist:
-        logger.debug("Registered: %s" % f.filename)
+        logger.debug("Registered: %s" % f)
         f.rtime = time.time()
         state.update_file(f)
         registered += 1

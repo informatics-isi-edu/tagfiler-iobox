@@ -40,7 +40,6 @@ class RERule(object):
     
     def __init__(self, **kwargs):
         
-        self.prepattern = kwargs.get("prepattern")
         self.pattern = kwargs.get("pattern")
         self.apply = kwargs.get("apply", "match")
         self.extract = kwargs.get("extract", "single")
@@ -56,6 +55,12 @@ class RERule(object):
         template = kwargs.get("template")
         if template:
             self.templates.append(template)
+        
+        prepatternstr = self.prepattern = kwargs.get("prepattern")
+        if prepatternstr:
+            self.prepattern = RERule(**{"pattern": prepatternstr})
+        else:
+            self.prepattern = None
 
 
 class LineRule(object):
@@ -127,7 +132,7 @@ class Tag(object):
 
 def create_default_name_path_rule(endpoint):
     """Creates the path rule for the required 'name' tag."""
-    path_rule = RERule()
+    path_rule = RERule(**{})
     path_rule.pattern = '^(?P<path>.*)'
     path_rule.extract = 'template'
     path_rule.templates.append('%s\g<path>' % endpoint)
