@@ -56,7 +56,7 @@ class RERule(object):
         if template:
             self.templates.append(template)
         
-        prepatternstr = self.prepattern = kwargs.get("prepattern")
+        prepatternstr = kwargs.get("prepattern")
         if prepatternstr:
             self.prepattern = RERule(**{"pattern": prepatternstr})
         else:
@@ -66,8 +66,13 @@ class RERule(object):
 class LineRule(object):
     """A regular expression rule used for tagging based on file contents."""
     def __init__(self, **kwargs):
-        self.path_rule = kwargs.get("path_rule")
-        self.rerules = kwargs.get("rerules", [])
+        #Note: the following code was in here originally, from dsmith or karlcz.
+        #    I am just keeping it in case it was to be used somehow...
+        #self.path_rule = kwargs.get("path_rule")
+        #self.rerules = kwargs.get("rerules", [])
+        
+        self.prepattern = kwargs.get("prepattern")
+        self.namefield = kwargs.get("namefield")
 
 
 class RERuleConstant(object):
@@ -102,6 +107,7 @@ class File(object):
         self.username = kwargs.get("username")
         self.groupname = kwargs.get("groupname")
         self.tags = kwargs.get("tags", [])
+        self.content_tags = kwargs.get("content_tags", [])
         self.status = kwargs.get("status")
         
     def filter_tags(self, name):

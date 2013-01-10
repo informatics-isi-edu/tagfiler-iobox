@@ -15,8 +15,9 @@
 #
 """The rule processor and supporting class definitions."""
 
-from tagfiler.iobox.models import RERule, Tag
+from tagfiler.iobox.models import RERule, LineRule, Tag
 import re
+import csv
 
 
 class RERuleProcessor(object):
@@ -136,6 +137,32 @@ class PathRuleProcessor(RERuleProcessor):
     def analyze(self, file_path):
         return super(PathRuleProcessor, self).analyze(file_path)
 
+class LineRuleProcessor(object):
+    def __init__(self, linerule):
+        """Constructor
+        
+        Keyword arguments:
+        rerule -- rerule object
+        
+        """
+        self.namefield = linerule.namefield
+        
+        if linerule.prepattern:
+            self.prepattern = re.compile(linerule.prepattern)
+        else:
+            self.prepattern = None
+    
+    def analyze(self, string):
+        if self.prepattern and not re.match(self.prepattern, string):
+            return dict()
+        dict_list = []
+        with open(string, 'rU') as csvfile:
+            r = csv.DictReader(csvfile)
+            for row in r:
+                nameval = row[self.namefield]
+                row['name'] = string + ":" + nameval
+                dict_list.append(row)
+        return dict_list
 
 class TagDirector(object):
     def tag_registered_file(self, rules, fileobj):
@@ -145,10 +172,22 @@ class TagDirector(object):
                 for v in v_list:
                     t = Tag(name=k, value=v)
                     fileobj.tags.append(t)
+                    
+    def tag_file_contents(self, rules, fileobj):
+        for rule in rules:
+            tag_dict_list = self.get_rule_processor(rule).analyze(fileobj.filename)
+            for tag_dict in tag_dict_list:
+                content_tags = []
+                for k,v in tag_dict.iteritems():
+                    t = Tag(name=k, value=v)
+                    content_tags.append(t)
+                fileobj.content_tags.append(content_tags)
 
     def get_rule_processor(self, rule):
         if isinstance(rule, RERule):
             return PathRuleProcessor(rule)
+        elif isinstance(rule, LineRule):
+            return LineRuleProcessor(rule)
         else:
             raise TypeError("Unsupported rule type for %s" % unicode(rule))
 

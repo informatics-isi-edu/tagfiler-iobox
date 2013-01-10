@@ -194,12 +194,19 @@ class TagfilerClient(object):
         """
         parsed_table = []
         tag_names = []
+        
+        tag_sets = []
         for fileobj in fileobjs:
+            tag_sets.append(fileobj.tags)
+            tag_sets.extend(fileobj.content_tags)
+            
+            
+        for tag_set in tag_sets:
             # name is a required tag
-            if not len(fileobj.filter_tags("name")):
-                raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
+            #if not len(fileobj.filter_tags("name")):
+            #    raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
             parsed_dict = {}
-            for tag in fileobj.tags:
+            for tag in tag_set:
                 tag_list = parsed_dict.get(tag.name, [])
                 tag_list.append(tag.value)
                 parsed_dict[tag.name] = tag_list
@@ -213,11 +220,14 @@ class TagfilerClient(object):
         self._send_request("PUT", bulkurl, payload, headers)
 
 
+    # TODO: need to deprecate 'add_subject', isn't being maintained
     def add_subject(self, fileobj):
         """Registers a single file in tagfiler
         
         Keyword arguments:
         fileobj -- models.File object with tags
+        
+        **DEPRECATED**
         """
         assert isinstance(fileobj, File)
 
@@ -251,3 +261,4 @@ class TagfilerClient(object):
 
     def _safequote(self, s):
         return urllib.quote(s, '')
+
