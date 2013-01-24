@@ -100,6 +100,32 @@ exist for it in Tagfiler otherwise the service will return an error.
 }
 --DO NOT INCLUDE THIS LINE--
 
+The following example is for a new feature, which is still under development. 
+This feature allows parsing of comma-separated values (CSV) files, and 
+creating tags based on each line (or rather row) of the file. The CSV file 
+will still be tagged as usual per the "rules" section of the configuration, 
+but in addition, if the file matches the "prepattern" of the "linerule" then 
+the linerule will also be invoked on the file.
+
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+    "linerules": [
+        {
+            "prepattern": ".*csv$",
+            "namefield": "patient_id"
+        }
+    ]
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+
+In the above linerule example, the rule's prepattern matches files that end in 
+"csv" such as files with the common file extension ".csv". At present, the 
+behavior is to take the first row of the CSV file, as its header row, and 
+create tags such that tag m,n = (name=<header column x>, value=<column x>) for
+each subject m. Then for each subject m, it is assigned a name composed of the
+filename of the file, then a ":" separator, followed by the value for the 
+column identified by the "namefield" in the linerule. Thus in the above 
+example, it expects a header column matching "patient_id" and it will use the
+subsequent values from that column to compose each subject's name. 
+
 Usage
 ~~~~~
 
