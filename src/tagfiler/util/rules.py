@@ -179,6 +179,8 @@ class TagDirector(object):
             for tag_dict in tag_dict_list:
                 content_tags = []
                 for k,v in tag_dict.iteritems():
+                    if not k or not v or k == '' or v == '':
+                        continue
                     t = Tag(name=k, value=v)
                     content_tags.append(t)
                 fileobj.content_tags.append(content_tags)
