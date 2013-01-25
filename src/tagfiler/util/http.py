@@ -199,9 +199,12 @@ class TagfilerClient(object):
         for fileobj in fileobjs:
             tag_sets.append(fileobj.tags)
             tag_sets.extend(fileobj.content_tags)
-            
-            
+        
         for tag_set in tag_sets:
+            # TODO: need to remove the following comment. 'name' used to be 
+            #   required so we would catch it here and raise an error, but
+            #   that is no longer the case.
+            #
             # name is a required tag
             #if not len(fileobj.filter_tags("name")):
             #    raise ValueError("Register file %s must have its 'name' tag set." % unicode(fileobj))
@@ -220,14 +223,32 @@ class TagfilerClient(object):
         self._send_request("PUT", bulkurl, payload, headers)
 
 
-    # TODO: need to deprecate 'add_subject', isn't being maintained
+    def find_subject_by_name(self, name):
+        """Looks up a subject by its name tag in tagfiler and returns a dictionary if found, None otherwise
+        
+        Keyword arguments:
+        name -- name to query
+        """
+        url = "%s/tags/name=%s" % (self.baseuri, self._safequote(name))
+        headers = {"Cookie": self.cookie, "Accept": "application/json"}
+        resp = self._send_request("GET", url, headers=headers)
+        subject = json.loads(resp.read())
+        return subject
+
+
+    def _safequote(self, s):
+        return urllib.quote(s, '')
+
+
+    '''
+    TODO: this commented code should be removed. I'm only keep it temporarily, 
+    because I will not remember how to do this non-bulk call!
+    
     def add_subject(self, fileobj):
         """Registers a single file in tagfiler
         
         Keyword arguments:
         fileobj -- models.File object with tags
-        
-        **DEPRECATED**
         """
         assert isinstance(fileobj, File)
 
@@ -245,20 +266,4 @@ class TagfilerClient(object):
         headers = {"Cookie": self.cookie}
         self._send_request("PUT", url, headers=headers)
 
-
-    def find_subject_by_name(self, name):
-        """Looks up a subject by its name tag in tagfiler and returns a dictionary if found, None otherwise
-        
-        Keyword arguments:
-        name -- name to query
-        """
-        url = "%s/tags/name=%s" % (self.baseuri, self._safequote(name))
-        headers = {"Cookie": self.cookie, "Accept": "application/json"}
-        resp = self._send_request("GET", url, headers=headers)
-        subject = json.loads(resp.read())
-        return subject
-
-
-    def _safequote(self, s):
-        return urllib.quote(s, '')
-
+    '''
