@@ -15,7 +15,7 @@
 #
 """The rule processor and supporting class definitions."""
 
-from tagfiler.iobox.models import RERule, LineRule, Tag
+from tagfiler.iobox.models import RERule, LineRule, DicomRule, Tag
 import re
 import csv
 
@@ -137,12 +137,13 @@ class PathRuleProcessor(RERuleProcessor):
     def analyze(self, file_path):
         return super(PathRuleProcessor, self).analyze(file_path)
 
+
 class LineRuleProcessor(object):
     def __init__(self, linerule):
         """Constructor
         
         Keyword arguments:
-        rerule -- rerule object
+        linerule -- LineRule object
         
         """
         self.namefield = linerule.namefield
@@ -163,6 +164,39 @@ class LineRuleProcessor(object):
                 row['name'] = string + ":" + nameval
                 dict_list.append(row)
         return dict_list
+
+
+class DicomRuleProcessor(object):
+    def __init__(self, dicomrule):
+        """Constructor
+        
+        Keyword arguments:
+        dicomrule -- DicomRule object
+        
+        """
+        if dicomrule.prepattern:
+            self.prepattern = re.compile(dicomrule.prepattern)
+        else:
+            self.prepattern = None
+            
+        self.tagnames = dicomrule.tagnames
+    
+    def analyze(self, string):
+        if self.prepattern and not re.match(self.prepattern, string):
+            return dict()
+        tag_dict = dict()
+        
+        import dicom    #@UnresolvedImport
+        dcm = dicom.read_file(string)
+        for tagname in self.tagnames:
+            print 'looking for ' + tagname
+            if tagname and not (tagname == '') and tagname in dcm:
+                tag_dict[tagname] = [dcm.get(tagname)]
+                print 'found ' + tagname + ' with value ' + dcm.get(tagname)
+                #TODO: need to handle multiple values returned from dicom object
+                
+        return tag_dict
+
 
 class TagDirector(object):
     def tag_registered_file(self, rules, fileobj):
@@ -190,6 +224,8 @@ class TagDirector(object):
             return PathRuleProcessor(rule)
         elif isinstance(rule, LineRule):
             return LineRuleProcessor(rule)
+        elif isinstance(rule, DicomRule):
+            return DicomRuleProcessor(rule)
         else:
             raise TypeError("Unsupported rule type for %s" % unicode(rule))
 

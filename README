@@ -110,7 +110,7 @@ the linerule will also be invoked on the file.
 --INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
     "linerules": [
         {
-            "prepattern": ".*csv$",
+            "prepattern": ".*\\.csv$",
             "namefield": "patient_id"
         }
     ]
@@ -125,6 +125,19 @@ filename of the file, then a ":" separator, followed by the value for the
 column identified by the "namefield" in the linerule. Thus in the above 
 example, it expects a header column matching "patient_id" and it will use the
 subsequent values from that column to compose each subject's name. 
+
+Another feature under development is DICOM metadata extraction. In this case, 
+the IOBox extracts the key, value pairs for each tagname in the tagnames field 
+of the rule. Each pair is turned into a tag added to the file.
+
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+    "dicomrules": [
+        {
+            "prepattern": ".*\\.dcm$",
+            "tagnames": ["StudyID", "StudyDate"]
+        }
+    ]
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
 
 Usage
 ~~~~~

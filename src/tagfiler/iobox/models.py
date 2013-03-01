@@ -33,6 +33,7 @@ class Outbox(object):
         self.excludes = kwargs.get("excludes", [])
         self.path_rules = kwargs.get("path_rules", [])
         self.line_rules = kwargs.get("line_rules", [])
+        self.dicom_rules = kwargs.get("dicom_rules", [])
 
 
 class RERule(object):
@@ -74,6 +75,11 @@ class LineRule(object):
         self.prepattern = kwargs.get("prepattern")
         self.namefield = kwargs.get("namefield")
 
+class DicomRule(object):
+    """A regular expression rule used for tagging based on dicom format."""
+    def __init__(self, **kwargs):
+        self.prepattern = kwargs.get("prepattern")
+        self.tagnames = kwargs.get("tagnames", [])
 
 class RERuleConstant(object):
     """A constant assigned to a rerule."""
