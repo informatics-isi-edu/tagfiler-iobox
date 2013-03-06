@@ -9,8 +9,11 @@ System Requirements
 
 Tagfiler Outbox is a python based utility. You must have a Python interpreter 
 installed on your system. Python version 2.6+ is required. No additional 
-packages should be necessary. We have tested on Mac OS X 10.7, CentOS 5, and 
-Fedora Core 11.
+packages are needed for the basic functionality. We have tested on Mac OS X 
+10.7, CentOS 5, and Fedora Core 11.
+
+For additional functionality:
+  * PyDICOM is required for DICOM support.
 
 Installation
 ~~~~~~~~~~~~
