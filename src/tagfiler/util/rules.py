@@ -221,7 +221,11 @@ class NiftiRuleProcessor(object):
         hdr = img.get_header()
         for tagname in self.tagnames:
             if tagname and not (tagname == '') and tagname in hdr:
-                tag_dict[tagname] = [str(hdr[tagname])]
+                value = str(hdr[tagname])
+                if not value or value == '':
+                    continue
+                value = value.replace('\x00', '')
+                tag_dict[tagname] = [value]
                 #TODO: need to handle multiple values returned from image header
                 
         return tag_dict
