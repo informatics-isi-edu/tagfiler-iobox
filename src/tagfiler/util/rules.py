@@ -189,10 +189,8 @@ class DicomRuleProcessor(object):
         import dicom    #@UnresolvedImport
         dcm = dicom.read_file(string)
         for tagname in self.tagnames:
-            print 'looking for ' + tagname
             if tagname and not (tagname == '') and tagname in dcm:
                 tag_dict[tagname] = [dcm.get(tagname)]
-                print 'found ' + tagname + ' with value ' + dcm.get(tagname)
                 #TODO: need to handle multiple values returned from dicom object
                 
         return tag_dict
@@ -222,10 +220,8 @@ class NiftiRuleProcessor(object):
         img = nib.load(string)
         hdr = img.get_header()
         for tagname in self.tagnames:
-            print 'looking for ' + tagname
             if tagname and not (tagname == '') and tagname in hdr:
                 tag_dict[tagname] = [str(hdr[tagname])]
-                print 'found ' + tagname + ' with value ' + str(tag_dict[tagname])
                 #TODO: need to handle multiple values returned from image header
                 
         return tag_dict
