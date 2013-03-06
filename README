@@ -14,6 +14,7 @@ packages are needed for the basic functionality. We have tested on Mac OS X
 
 For additional functionality:
   * PyDICOM is required for DICOM support.
+  * Nibabel is required for Nifti support.
 
 Installation
 ~~~~~~~~~~~~
@@ -141,6 +142,22 @@ of the rule. Each pair is turned into a tag added to the file.
         }
     ]
 --INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+
+Another feature under development is Nifti metadata extraction. As with DICOM, 
+the IOBox extracts the key, value pairs for each tagname in the tagnames field 
+of the rule. Each pair is turned into a tag added to the file.
+
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+    "niftirules": [
+        {
+            "prepattern": ".*\\.nii\\.gz$",
+            "tagnames": ["intent_name", "intent_code"]
+        }
+    ]
+--INSERT INTO CONFIG FILE ANYWHERE BETWEEN THE OUTTER CURLY BRACKETS--
+
+Currently, support for DICOM and Nifti is fairly primitive. The codes are 
+extracted from the image headers and flattened into a character string.
 
 Usage
 ~~~~~

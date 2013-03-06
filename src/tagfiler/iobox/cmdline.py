@@ -18,7 +18,7 @@ Command-line interface for the Tagfiler Outbox.
 """
 
 import version
-from models import File, RERule, LineRule, DicomRule, Outbox, create_default_name_path_rule
+from models import File, RERule, LineRule, DicomRule, NiftiRule, Outbox, create_default_name_path_rule
 from dao import OutboxStateDAO
 from tagfiler.util.rules import TagDirector
 from tagfiler.util.http import TagfilerClient, UnresolvedAddress, NetworkError, ProtocolError, MalformedURL
@@ -212,6 +212,11 @@ def main(args=None):
     dcmrules = cfg.get('dicomrules', [])
     for dcmrule in dcmrules:
         outbox_model.dicom_rules.append(DicomRule(**dcmrule))
+        
+    # Add optional nifti (content) rules
+    niftirules = cfg.get('niftirules', [])
+    for niftirule in niftirules:
+        outbox_model.nifti_rules.append(NiftiRule(**niftirule))
 
     # Establish Tagfiler client connection
     try:
@@ -291,6 +296,7 @@ def main(args=None):
         logger.debug("Tagging: %s" % f)
         tag_director.tag_registered_file(outbox_model.path_rules, f)
         tag_director.tag_registered_file(outbox_model.dicom_rules, f)
+        tag_director.tag_registered_file(outbox_model.nifti_rules, f)
         tag_director.tag_file_contents(outbox_model.line_rules, f)
         tagged += 1
     

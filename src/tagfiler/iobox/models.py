@@ -34,6 +34,7 @@ class Outbox(object):
         self.path_rules = kwargs.get("path_rules", [])
         self.line_rules = kwargs.get("line_rules", [])
         self.dicom_rules = kwargs.get("dicom_rules", [])
+        self.nifti_rules = kwargs.get("nifti_rules", [])
 
 
 class RERule(object):
@@ -77,6 +78,12 @@ class LineRule(object):
 
 class DicomRule(object):
     """A regular expression rule used for tagging based on dicom format."""
+    def __init__(self, **kwargs):
+        self.prepattern = kwargs.get("prepattern")
+        self.tagnames = kwargs.get("tagnames", [])
+
+class NiftiRule(object):
+    """A regular expression rule used for tagging based on nifti format."""
     def __init__(self, **kwargs):
         self.prepattern = kwargs.get("prepattern")
         self.tagnames = kwargs.get("tagnames", [])

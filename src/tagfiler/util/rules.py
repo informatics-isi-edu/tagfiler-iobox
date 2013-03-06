@@ -15,7 +15,7 @@
 #
 """The rule processor and supporting class definitions."""
 
-from tagfiler.iobox.models import RERule, LineRule, DicomRule, Tag
+from tagfiler.iobox.models import RERule, LineRule, DicomRule, NiftiRule, Tag
 import re
 import csv
 
@@ -198,12 +198,49 @@ class DicomRuleProcessor(object):
         return tag_dict
 
 
+class NiftiRuleProcessor(object):
+    def __init__(self, niftirule):
+        """Constructor
+        
+        Keyword arguments:
+        Niftirule -- NiftiRule object
+        
+        """
+        if niftirule.prepattern:
+            self.prepattern = re.compile(niftirule.prepattern)
+        else:
+            self.prepattern = None
+            
+        self.tagnames = niftirule.tagnames
+    
+    def analyze(self, string):
+        if self.prepattern and not re.match(self.prepattern, string):
+            return dict()
+        tag_dict = dict()
+        
+        import nibabel as nib   #@UnresolvedImport
+        img = nib.load(string)
+        hdr = img.get_header()
+        for tagname in self.tagnames:
+            print 'looking for ' + tagname
+            if tagname and not (tagname == '') and tagname in hdr:
+                tag_dict[tagname] = [str(hdr[tagname])]
+                print 'found ' + tagname + ' with value ' + str(tag_dict[tagname])
+                #TODO: need to handle multiple values returned from image header
+                
+        return tag_dict
+
+
 class TagDirector(object):
     def tag_registered_file(self, rules, fileobj):
         for rule in rules:
             tag_dict = self.get_rule_processor(rule).analyze(fileobj.filename)
             for k,v_list in tag_dict.iteritems():
+                if not k or k == '':
+                    continue
                 for v in v_list:
+                    if not v or v == '':
+                        continue
                     t = Tag(name=k, value=v)
                     fileobj.tags.append(t)
                     
@@ -226,6 +263,8 @@ class TagDirector(object):
             return LineRuleProcessor(rule)
         elif isinstance(rule, DicomRule):
             return DicomRuleProcessor(rule)
+        elif isinstance(rule, NiftiRule):
+            return NiftiRuleProcessor(rule)
         else:
             raise TypeError("Unsupported rule type for %s" % unicode(rule))
 
