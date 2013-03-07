@@ -190,7 +190,11 @@ class DicomRuleProcessor(object):
         dcm = dicom.read_file(string)
         for tagname in self.tagnames:
             if tagname and not (tagname == '') and tagname in dcm:
-                tag_dict[tagname] = [dcm.get(tagname)]
+                value = dcm.get(tagname)
+                if not value or value == '':
+                    continue
+                value = value.replace('\x00', '')
+                tag_dict[tagname] = [value]
                 #TODO: need to handle multiple values returned from dicom object
                 
         return tag_dict
