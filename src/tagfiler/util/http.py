@@ -96,7 +96,7 @@ class NotFoundError(TagfilerException):
 class TagfilerClient(object):
     """Web service client used to interact with the Tagfiler REST service."""
 
-    def __init__(self, url, username, password=None):
+    def __init__(self, url, username=None, password=None, goauthtoken=None):
         """Initializes the Tagfiler client object.
         """
         pieces = urlparse.urlparse(url) #TODO: does this throw exceptions?!
@@ -110,13 +110,17 @@ class TagfilerClient(object):
         self.baseuri = pieces[2]
         self.username = username
         self.password = password
+        self.goauthtoken = goauthtoken
         self.connection_class = None
         if self.scheme == "https":
             self.connection_class = HTTPSConnection
         else:
             self.connection_class = HTTPConnection
         self.connection = None
-        self.cookie = None
+        
+        self.authn_header = None
+        self.authn_header_value = None
+        #self.cookie = None
         
         if not self.host or not len(self.host):
             raise MalformedURL(cause='Hostname cannot be None')
@@ -142,18 +146,27 @@ class TagfilerClient(object):
         Raises 'NotFoundError' if the Tagfiler login resource is not found.
         """
         assert self.connection
-        headers = {}
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-        try:
-            loginurl = "%s/session" % self.baseuri
-            resp = self._send_request("POST", loginurl, 
-                                      "username=%s&password=%s" % \
-                                      (self.username, self.password), headers)
-            self.cookie = resp.getheader("set-cookie")
-        except socket.gaierror as e:
-            raise UnresolvedAddress(e)
-        except ProtocolError as e:
-            raise
+        assert self.goauthtoken or (self.username and self.password)
+        if self.goauthtoken:
+            # This is not the Login you are looking for
+            self.authn_header = 'Globus-Goauthtoken'
+            self.authn_header_value = self.goauthtoken
+        else:
+            # Session authentication
+            headers = {}
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+            try:
+                loginurl = "%s/session" % self.baseuri
+                resp = self._send_request("POST", loginurl, 
+                                          "username=%s&password=%s" % \
+                                          (self.username, self.password), headers)
+                #self.cookie = resp.getheader("set-cookie")
+                self.authn_header_value = resp.getheader("set-cookie")
+                self.authn_header = 'Cookie'
+            except socket.gaierror as e:
+                raise UnresolvedAddress(e)
+            except ProtocolError as e:
+                raise
 
 
     def close(self):
@@ -170,7 +183,9 @@ class TagfilerClient(object):
             raise NetworkError(e)
         finally:
             self.connection = None
-            self.cookie = None
+            self.authn_header = None
+            self.authn_header_value = None
+            #self.cookie = None
 
 
     def _send_request(self, method, url, body='', headers={}):
@@ -219,7 +234,9 @@ class TagfilerClient(object):
             parsed_table.append(parsed_dict)
         payload = json.dumps(parsed_table)
         bulkurl = '%s/subject/name(%s)' % (self.baseuri, ';'.join([ self._safequote(tag) for tag in tag_names ]))
-        headers = {"Content-Type": "application/json", "Cookie": self.cookie}
+        #headers = {"Content-Type": "application/json", "Cookie": self.cookie}
+        headers = {"Content-Type": "application/json", \
+                   self.authn_header: self.authn_header_value}
         self._send_request("PUT", bulkurl, payload, headers)
 
 
@@ -230,7 +247,10 @@ class TagfilerClient(object):
         name -- name to query
         """
         url = "%s/tags/name=%s" % (self.baseuri, self._safequote(name))
-        headers = {"Cookie": self.cookie, "Accept": "application/json"}
+        # TODO (RS): need to remove "Cookie" references
+        #headers = {"Cookie": self.cookie, "Accept": "application/json"}
+        headers = {"Accept": "application/json", \
+                   self.authn_header: self.authn_header_value}
         resp = self._send_request("GET", url, headers=headers)
         subject = json.loads(resp.read())
         return subject

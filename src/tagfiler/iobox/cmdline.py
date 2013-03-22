@@ -87,7 +87,7 @@ def main(args=None):
                         help=('local state database (default: %s)' % 
                               default_state_db))
     
-    # Use username#hostname as default endpoint
+    # Until we know better, use gsiftp://... as default endpoint prefix
     default_endpoint = "gsiftp://%s" % socket.gethostname()
     parser.add_argument('-e', '--endpoint', type=str,
                         help=('endpoint (default: %s)' % 
@@ -119,6 +119,8 @@ def main(args=None):
                        type=str, help='username for your Tagfiler user account')
     group.add_argument('--password', dest='password', metavar='PASSWORD', 
                        type=str, help='password for your Tagfiler user account')
+    group.add_argument('--goauthtoken', dest='goauthtoken', metavar='GOAUTHTOKEN', 
+                       type=str, help='GOAuth token from GO authentication')
     group.add_argument('--bulk_ops_max', type=int, 
                         help='maximum bulk operations per call to Tagfiler' + \
                         ' (default: %d)' % __BULK_OPS_MAX)
@@ -161,12 +163,11 @@ def main(args=None):
         parser.error('Tagfiler URL must be given.')
     
     outbox_model.username = args.username or cfg.get('username')
-    if not outbox_model.username:
-        parser.error('Tagfiler username must be given.')
-    
     outbox_model.password = args.password or cfg.get('password')
-    if not outbox_model.password:
-        parser.error('Tagfiler password must be given.')
+    outbox_model.goauthtoken = args.goauthtoken or cfg.get('goauthtoken')
+    if not outbox_model.goauthtoken and \
+        (not outbox_model.username or not outbox_model.password):
+        parser.error('Tagfiler username and password must be given.')
         
     outbox_model.bulk_ops_max = args.bulk_ops_max or \
                                 cfg.get('bulk_ops_max', __BULK_OPS_MAX)
@@ -221,7 +222,7 @@ def main(args=None):
     # Establish Tagfiler client connection
     try:
         client = TagfilerClient(outbox_model.url, outbox_model.username, 
-                                outbox_model.password)
+                            outbox_model.password, outbox_model.goauthtoken)
         client.connect()
         client.login()
     except MalformedURL as err:

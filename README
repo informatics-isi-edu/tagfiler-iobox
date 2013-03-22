@@ -159,6 +159,11 @@ of the rule. Each pair is turned into a tag added to the file.
 Currently, support for DICOM and Nifti is fairly primitive. The codes are 
 extracted from the image headers and flattened into a character string.
 
+Globus Online Authentication (GOAuth) is now supported but needs thorough 
+testing. To use it, first acquire a GOAuth token using a client such as
+'curl' then pass it in the Outbox's "goauthtoken" argument or in the 
+configuration file with a JSON parameter of the same name.
+
 Usage
 ~~~~~
 

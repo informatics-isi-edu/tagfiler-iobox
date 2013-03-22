@@ -28,6 +28,7 @@ class Outbox(object):
         self.url = kwargs.get("url")
         self.username = kwargs.get("username")
         self.password = kwargs.get("password")
+        self.goauthtoken = kwargs.get("goauthtoken")
         self.roots = kwargs.get("roots", [])
         self.includes = kwargs.get("includes", [])
         self.excludes = kwargs.get("excludes", [])
