@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def tree_scan(top, 
-              expand_dir=lambda dirpath, relpath: relpath, 
+              expand_dir=lambda dirpath, relpath, dname: '%s%s%s' % (relpath, os.path.sep, dname), 
               expand_file=lambda dirpath, relpath, fname: '%s%s%s' % (relpath, os.path.sep, fname), 
               excludes=[],
               includes=[]):
@@ -18,9 +18,9 @@ def tree_scan(top,
        Required 'top' parameter is string path to root directory; a
        non-directory entry will generate zero members.
 
-       Optional 'expand_dir' function takes (dirpath, relpath) of a
-       member directory and returns alternate value (default returns
-       relpath).
+       Optional 'expand_dir' function takes (dirpath, relpath, dname)
+       of a member directory and returns alternate value (default 
+       returns relpath-qualified dir name).
 
        Optional 'expand_file' function takes (dirpath, relpath, fname)
        of a member file and returns alternate value (default returns
@@ -70,10 +70,11 @@ def tree_scan(top,
             if exclude_name(l[i], dirpath):
                 del l[i]
 
-    for dirpath, dirnames, filenames in os.walk(top):
+    for dirpath, dirnames, filenames in os.walk(top, topdown=False):
         relpath = dirpath[len(top):]
             
-        yield expand_dir(dirpath, relpath or os.path.sep)
+        #if not exclude_name(dirpath, relpath):
+        #yield expand_dir(dirpath, relpath or os.path.sep)
 
         # filter out excluded children
         filter_list_inplace(dirnames, relpath)
@@ -82,6 +83,10 @@ def tree_scan(top,
         for fname in filenames:
             # non-excluded child files are not visited again
             yield expand_file(dirpath, relpath, fname)
+        
+        for dname in dirnames:
+            # non-excluded child dirs are not visited again
+            yield expand_dir(dirpath, relpath, dname)
 
 def uid2uname(uid):
     """Convert numerid UID to username if possible or leave as number."""
@@ -106,16 +111,18 @@ def gid2gname(gid):
     
     return gid
 
-def expand_dir_stats(dirpath, relpath):
+def expand_dir_stats(dirpath, relpath, dname):
     """Expand directory stats as a helper function useful with tree_scan expand_dir argument.
 
        Returns tuple (dirpath, None, mtime, user, group)
     """
+    dpath = '%s%s%s' % (dirpath, os.path.sep, dname)
+    rdpath = '%s%s%s' % (relpath, os.path.sep, dname)
     try:
-        s = os.stat(dirpath)
+        s = os.stat(dpath)
     except:
-        s = os.lstat(dirpath)
-    return (relpath, None, s.st_mtime, uid2uname(s.st_uid), gid2gname(s.st_gid))
+        s = os.lstat(dpath)
+    return (rdpath, None, s.st_mtime, uid2uname(s.st_uid), gid2gname(s.st_gid))
 
 def expand_file_stats(dirpath, relpath, fname):
     """Expand file stats as a helper function useful with tree_scan expand_file argument.
@@ -148,16 +155,18 @@ def sha256sum(fpath):
     except:
         return None
 
-def expand_dir_stats_sha256(dirpath, relpath):
+def expand_dir_stats_sha256(dirpath, relpath, dname):
     """Expand directory stats as a helper function useful with tree_scan expand_dir argument.
 
        Returns tuple (dirpath, None, mtime, user, group, None)
     """
+    dpath = '%s%s%s' % (dirpath, os.path.sep, dname)
+    rdpath = '%s%s%s' % (relpath, os.path.sep, dname)
     try:
-        s = os.stat(dirpath)
+        s = os.stat(dpath)
     except:
-        s = os.lstat(dirpath)
-    return (relpath, None, s.st_mtime, uid2uname(s.st_uid), gid2gname(s.st_gid), None)
+        s = os.lstat(dpath)
+    return (rdpath, None, s.st_mtime, uid2uname(s.st_uid), gid2gname(s.st_gid), None)
 
 def expand_file_stats_sha256(dirpath, relpath, fname):
     """Expand file stats as a helper function useful with tree_scan expand_file argument.
