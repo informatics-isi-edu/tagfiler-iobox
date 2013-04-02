@@ -302,7 +302,8 @@ def main(args=None):
         tagged += 1
     
     # Register files in worklist
-    client.add_subjects(worklist)
+    if len(worklist):
+        client.add_subjects(worklist)
     for f in worklist:
         logger.debug("Registered: %s" % f)
         f.rtime = time.time()
